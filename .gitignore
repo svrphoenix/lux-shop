@@ -1,0 +1,63 @@
+# =========================
+# Python & Django
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# =========================
+# Environment Variables
+# =========================
+.env
+.env.local
+.env.*
+!.env.example
+
+# =========================
+# Virtual Environments (uv)
+# =========================
+.venv/
+venv/
+env/
+
+# =========================
+# Static & Media Files
+# =========================
+/media/
+/staticfiles/
+/static_root/
+
+# =========================
+# Tooling & Caches
+# =========================
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# =========================
+# Logs
+# =========================
+*.log
+logs/
+
+# =========================
+# OS & IDEs
+# =========================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo

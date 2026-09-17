@@ -1,0 +1,80 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="DuplicatedCode" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <Languages>
+        <language minSize="52" name="Python" />
+      </Languages>
+    </inspection_tool>
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <list>
+          <option value="annotated-types" />
+          <option value="anyio" />
+          <option value="build" />
+          <option value="CacheControl" />
+          <option value="certifi" />
+          <option value="cffi" />
+          <option value="charset-normalizer" />
+          <option value="cleo" />
+          <option value="crashtest" />
+          <option value="cryptography" />
+          <option value="distlib" />
+          <option value="distro" />
+          <option value="dotenv" />
+          <option value="dulwich" />
+          <option value="fastjsonschema" />
+          <option value="filelock" />
+          <option value="findpython" />
+          <option value="h11" />
+          <option value="httpcore" />
+          <option value="httpx" />
+          <option value="idna" />
+          <option value="installer" />
+          <option value="jaraco.classes" />
+          <option value="jaraco.context" />
+          <option value="jaraco.functools" />
+          <option value="jeepney" />
+          <option value="jiter" />
+          <option value="keyring" />
+          <option value="more-itertools" />
+          <option value="msgpack" />
+          <option value="openai" />
+          <option value="pbs-installer" />
+          <option value="pipenv" />
+          <option value="pkginfo" />
+          <option value="platformdirs" />
+          <option value="poetry" />
+          <option value="poetry-core" />
+          <option value="pycparser" />
+          <option value="pydantic" />
+          <option value="pydantic_core" />
+          <option value="pyproject_hooks" />
+          <option value="python-dotenv" />
+          <option value="python-telegram-bot" />
+          <option value="RapidFuzz" />
+          <option value="requests" />
+          <option value="requests-toolbelt" />
+          <option value="SecretStorage" />
+          <option value="shellingham" />
+          <option value="sniffio" />
+          <option value="tomlkit" />
+          <option value="tqdm" />
+          <option value="trove-classifiers" />
+          <option value="typing-inspection" />
+          <option value="typing_extensions" />
+          <option value="urllib3" />
+          <option value="virtualenv" />
+          <option value="zstandard" />
+        </list>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredIdentifiers">
+        <list>
+          <option value="typing.Coroutine.*" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
