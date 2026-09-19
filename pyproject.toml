@@ -1,29 +1,30 @@
 [project]
 name = "luxshop"
 version = "0.1.0"
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 dependencies = [
     "django>=6.1.1",
     "django-cors-headers>=4.9.0",
     "django-environ>=0.14.0",
     "django-filter>=26.1",
-    "djangorestframework>=3.18.0",
+    "djangorestframework==3.18.1",
     "djangorestframework-simplejwt>=5.5.1",
-    "djangorestframework-stubs>=3.18.1",
     "pillow>=12.3.0",
-    "pre-commit>=4.6.2",
-    "psycopg[binary,pool]>=3.3.5",
-    "python-decouple>=3.8",
+    "psycopg[binary,pool]==3.3.6",
 ]
 
 [dependency-groups]
 dev = [
-    "ruff>=0.16.7",
+    "django-stubs>=6.1.1",
+    "djangorestframework-stubs>=3.18.1",
+    "pre-commit>=4.6.2",
+    "ruff==0.16.8",
 ]
 
 [tool.ruff]
-target-version = "py313"
+target-version = "py312"
 line-length = 88
+extend-exclude = ["**/migrations/**"]
 
 [tool.ruff.lint]
 select = [
@@ -34,21 +35,21 @@ select = [
     "B",    # flake8-bugbear
     "C90",  # mccabe
     "UP",   # pyupgrade
-
     "RET",  # flake8-return
     "SIM",  # flake8-simplify
-
     "DJ",   # flake8-django
     "RSE",  # flake8-raise
 ]
 
 ignore = [
-    "E501",
+    "E501",  # line too long
 ]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
 
 [tool.ruff.lint.per-file-ignores]
-"**/migrations/*" = ["E501"]
 "**/settings/*.py" = ["F401", "E402", "F403", "F405"]
+
+[tool.django-stubs]
+django_settings_module = "config.settings.local"

@@ -1,17 +1,11 @@
 from .base import *
 
-DEBUG = True
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
+environ.Env.read_env(BASE_DIR / ".env.local")
 
-# Database connection (uri from environment
+# Variables from environment
+DEBUG = env("DEBUG")
+SECRET_KEY = env("SECRET_KEY")
+ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 DATABASES = {"default": env.db("DATABASE_URL")}
-# Email
-# https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
-
-MAILERS = {
-    "default": {
-        "BACKEND": "django.core.mail.backends.console.EmailBackend",
-    },
-}
-
-CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS")
+CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS")
+CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS")

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
@@ -10,9 +12,10 @@ if TYPE_CHECKING:
     from apps.users.models import User
 
 
+# noinspection PyUnusedLocal
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_or_update_user_profile(
-    sender: type[User], instance: User, created: bool, **kwargs: Any
+    _sender: type[User], instance: User, created: bool, **_kwargs: Any
 ) -> None:
     """
     Signal to automatically create/save a profile when a user is created.

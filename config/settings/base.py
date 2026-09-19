@@ -6,18 +6,20 @@ from pathlib import Path
 
 import environ
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-
-# Secret key from environment
+# Default environment initialization for project
 env = environ.Env(
+    DEBUG=(bool, True),
     SECRET_KEY=(
         str,
         "django-insecure-#5^au%ku+9ufgl@w!&2zy7&f+cw+im^bq(g3c*1#ea39xm0@-",
     ),
+    ALLOWED_HOSTS=(list, []),
+    CORS_ALLOWED_ORIGINS=(list, []),
+    CSRF_TRUSTED_ORIGINS=(list, []),
 )
-environ.Env.read_env(BASE_DIR / ".env.local")
-SECRET_KEY = env("SECRET_KEY")
+
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Application definition
 INSTALLED_APPS = [
@@ -66,7 +68,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-
 # Internationalization
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
@@ -81,6 +82,12 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = "static/"
+STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Media files
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 # Custom User Model
 AUTH_USER_MODEL = "users.User"
@@ -123,3 +130,11 @@ CORS_ALLOW_HEADERS = [
     "content-type",
     "authorization",
 ]
+
+# Email
+# https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
+MAILERS = {
+    "default": {
+        "BACKEND": "django.core.mail.backends.console.EmailBackend",
+    },
+}
