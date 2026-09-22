@@ -2,13 +2,14 @@ import logging
 
 from django.db import connection
 from django.http import JsonResponse
+from django.http.request import HttpRequest
 from rest_framework import status
 
 logger = logging.getLogger(__name__)
 
 
 # Create your views here.
-def health_check(request) -> JsonResponse:
+def health_check(request: HttpRequest) -> JsonResponse:
     """
     Endpoint for Liveness/Readiness checking.
     """

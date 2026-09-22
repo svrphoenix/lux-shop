@@ -12,18 +12,19 @@ if TYPE_CHECKING:
     from apps.users.models import User
 
 
-# noinspection PyUnusedLocal
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_or_update_user_profile(
-    _sender: type[User], instance: User, created: bool, **_kwargs: Any
+    sender: type[User], instance: User, created: bool, **kwargs: Any
 ) -> None:
     """
     Signal to automatically create/save a profile when a user is created.
     """
+    _ = (sender, kwargs)
+    if getattr(instance, "_skip_profile_signal", False):
+        return
+
     if created:
-        Profile.objects.create(user=instance)
+        Profile.objects.get_or_create(user=instance)
     else:
         if hasattr(instance, "profile"):
             instance.profile.save()
-        else:
-            Profile.objects.create(user=instance)
