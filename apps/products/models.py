@@ -2,6 +2,7 @@
 from decimal import Decimal
 from typing import Self
 
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -53,7 +54,23 @@ class Category(TimeStampedModel):
             ),
         ]
 
+    def clean(self) -> None:
+        super().clean()
+
+        if self.parent_id:
+            if self.parent_id == self.pk:
+                raise ValidationError({"parent": "Category cannot be its own parent."})
+
+            ancestor = self.parent
+            while ancestor is not None:
+                if ancestor.pk == self.pk:
+                    raise ValidationError(
+                        {"parent": "Circular category dependence detected."}
+                    )
+                ancestor = ancestor.parent
+
     def save(self, *args, **kwargs) -> None:
+        self.full_clean()
         if not self.slug:
             self.slug = generate_unique_slug(self, self.name, fallback_slug="category")
         super().save(*args, **kwargs)

@@ -1,11 +1,26 @@
-# Register your models here.
+from typing import cast
+
+from django import forms
 from django.contrib import admin
 
 from apps.products.models import Category, Product
 
 
+class CategoryAdminForm(forms.ModelForm):
+    class Meta:
+        model = Category
+        fields = ("name", "slug", "description", "parent")
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk and "parent" in self.fields:
+            parent_field = cast(forms.ModelChoiceField, self.fields["parent"])
+            parent_field.queryset = Category.objects.exclude(pk=self.instance.pk)
+
+
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
+    form = CategoryAdminForm
     list_display = ["name", "parent", "description"]
     prepopulated_fields = {"slug": ["name"]}
 
@@ -37,7 +52,7 @@ class ProductAdmin(admin.ModelAdmin):
 
     def get_readonly_fields(self, request, obj=None):
         if obj:
-            return self.readonly_fields + ("slug",)
+            return *self.readonly_fields, "slug"
         return self.readonly_fields
 
     def get_prepopulated_fields(self, request, obj=None):
