@@ -16,8 +16,9 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "django-stubs>=6.1.1",
-    "djangorestframework-stubs>=3.18.1",
+    "django-stubs[compatible-mypy]>=6.1.1",
+    "djangorestframework-stubs[compatible-mypy]>=3.18.1",
+    "mypy>=2.3.1",
     "pre-commit>=4.6.2",
     "ruff==0.16.8",
 ]
@@ -40,10 +41,14 @@ select = [
     "SIM",  # flake8-simplify
     "DJ",   # flake8-django
     "RSE",  # flake8-raise
+    "S",    # flake8-bandit (security)
+    "RUF", # Ruff-specific rules
 ]
 
 ignore = [
     "E501",  # line too long
+    "S101",  # use of assert
+    "RUF012",  # Mutable class attributes
 ]
 
 [tool.ruff.lint.mccabe]
@@ -51,6 +56,30 @@ max-complexity = 10
 
 [tool.ruff.lint.per-file-ignores]
 "**/settings/*.py" = ["F401", "E402", "F403", "F405"]
+"**/tests/*.py" = ["S101", "S105", "S106"]
+
+[tool.mypy]
+plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
+python_version = "3.12"
+exclude = ".*/migrations/.*"
+check_untyped_defs = true
+ignore_missing_imports = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = [
+    "environ.*",
+    "rest_framework_simplejwt.*",
+    "slugify.*",
+    "corsheaders.*",
+]
+ignore_missing_imports = true
 
 [tool.django-stubs]
 django_settings_module = "config.settings.local"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["test_*.py", "*_test.py", "tests.py"]
+addopts = "--strict-markers --tb=short"
