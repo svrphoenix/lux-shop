@@ -2,7 +2,7 @@ from typing import Any, cast
 
 from rest_framework import generics, permissions, status
 from rest_framework.generics import RetrieveUpdateAPIView
-from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken

@@ -9,6 +9,7 @@ class User(AbstractUser):
     """
 
     email = models.EmailField(_("email address"), unique=True)
+    _skip_profile_signal: bool = False
 
     class Meta:
         verbose_name = _("user")
