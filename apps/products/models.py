@@ -1,10 +1,19 @@
-# Create your models here.
 from decimal import Decimal
 from typing import Self
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.db.models import (
+    Avg,
+    Count,
+    FloatField,
+    IntegerField,
+    OuterRef,
+    Subquery,
+    Sum,
+)
+from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _
 
 from apps.core.models import TimeStampedModel
@@ -70,9 +79,9 @@ class Category(TimeStampedModel):
                 ancestor = ancestor.parent
 
     def save(self, *args, **kwargs) -> None:
-        self.full_clean()
         if not self.slug:
             self.slug = generate_unique_slug(self, self.name, fallback_slug="category")
+        self.full_clean()
         super().save(*args, **kwargs)
 
     def __str__(self) -> str:
@@ -91,6 +100,38 @@ class ProductQuerySet(models.QuerySet):
 
     def active(self) -> Self:
         return self.filter(is_active=True)
+
+    def with_rating(self) -> Self:
+        """Annotate products with their average rating and review count."""
+        return self.annotate(
+            rating_avg=Coalesce(Avg("reviews__rating"), 0.0, output_field=FloatField()),
+            rating_count=Count("reviews", distinct=True),
+        )
+
+    def with_sold(self) -> Self:
+        """Annotate products with quantities from non-canceled orders."""
+        from apps.orders.models import Order, OrderItem
+
+        sold = (
+            OrderItem.objects.filter(product=OuterRef("pk"))
+            .exclude(order__status=Order.OrderStatus.CANCELLED)
+            .values("product")
+            .annotate(total=Sum("quantity"))
+            .values("total")
+        )
+        return self.annotate(
+            sold_qty=Coalesce(Subquery(sold, output_field=IntegerField()), 0),
+        )
+
+    def for_listing(self) -> Self:
+        """Return the complete, query-efficient public catalogue queryset."""
+        return (
+            self.active()
+            .select_related("category")
+            .with_rating()
+            .with_sold()
+            .order_by("-created_at")
+        )
 
 
 class Product(TimeStampedModel):
@@ -135,6 +176,12 @@ class Product(TimeStampedModel):
 
     def __str__(self) -> str:
         return self.name
+
+    def get_absolute_url(self) -> str:
+        """Canonical public API URL for this product."""
+        from django.urls import reverse
+
+        return reverse("products:product-detail", kwargs={"slug": self.slug})
 
     @property
     def is_in_stock(self) -> bool:
