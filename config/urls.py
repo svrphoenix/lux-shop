@@ -27,6 +27,8 @@ urlpatterns = [
     path("api/health/", health_check, name="health_check"),
     path("api/v1/auth/", include("apps.users.urls_auth", namespace="auth")),
     path("api/v1/", include("apps.users.urls", namespace="users")),
+    path("api/v1/", include("apps.products.urls", namespace="products")),
+    path("api/v1/", include("apps.reviews.urls", namespace="reviews")),
 ]
 
 if settings.DEBUG:

@@ -17,6 +17,7 @@ build/
 .env.local
 .env.*
 !.env.example
+!.env.test
 
 # =========================
 # Virtual Environments (uv)

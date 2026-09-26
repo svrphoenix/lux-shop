@@ -20,6 +20,8 @@ dev = [
     "djangorestframework-stubs[compatible-mypy]>=3.18.1",
     "mypy>=2.3.1",
     "pre-commit>=4.6.2",
+    "pytest>=9.1.0",
+    "pytest-django>=4.11.1",
     "ruff==0.16.8",
 ]
 
@@ -81,5 +83,6 @@ django_settings_module = "config.settings.local"
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings.test"
+testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py", "tests.py"]
 addopts = "--strict-markers --tb=short"
