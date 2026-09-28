@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.core.validators import MinValueValidator
-from django.db import models, transaction
+from django.db import connection, models, transaction
 from django.db.models import F, Sum
 from django.utils.translation import gettext_lazy as _
 
@@ -76,6 +76,12 @@ class Order(TimeStampedModel):
     @classmethod
     def _generate_order_number(cls) -> str:
         """Generates a secure, unique, auto-incrementing order number (starting from 100001)."""
+        if connection.vendor == "postgresql":
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT nextval('order_number_seq');")
+                row = cursor.fetchone()
+                return str(row[0])
+
         with transaction.atomic():
             last_order: Order | None = (
                 Order.objects.select_for_update().order_by("-id").first()
@@ -152,7 +158,15 @@ class OrderItem(models.Model):
             models.UniqueConstraint(
                 fields=["order", "product"],
                 name="unique_product_per_order",
-            )
+            ),
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0),
+                name="order_item_quantity_gt_zero",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(price__gte=Decimal("0.01")),
+                name="order_item_price_gte_zero",
+            ),
         ]
 
     def __str__(self) -> str:
