@@ -97,12 +97,13 @@ class ProductsAPITests(TestCase):
             404,
         )
 
-    def test_categories_list_only_returns_active_root_categories(self) -> None:
+    def test_categories_list_includes_active_subcategories(self) -> None:
         Category.objects.create(name="Hidden root", is_active=False)
 
         response = self.client.get(reverse("products:category-list"))
 
         self.assertEqual(response.status_code, 200)
         self.assertCountEqual(
-            [category["name"] for category in response.json()], ["Hops", "Yeast"]
+            [category["name"] for category in response.json()],
+            ["Hops", "Aroma Hops", "Yeast"],
         )

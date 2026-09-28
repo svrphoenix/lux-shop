@@ -1,5 +1,6 @@
 import django_filters as filters
 from django.db.models import Q, QuerySet
+from django.http import QueryDict
 
 from apps.products.models import Category, Product
 
@@ -38,6 +39,25 @@ class ProductFilter(filters.FilterSet):
     class Meta:
         model = Product
         fields: list[str] = []
+
+    def __init__(self, data=None, *args, **kwargs) -> None:
+        """Ignore empty query-string values emitted by HTML filter forms."""
+        if isinstance(data, QueryDict):
+            data = data.copy()
+            for field_name in self.get_filters():
+                values = [value for value in data.getlist(field_name) if value.strip()]
+                if values:
+                    data.setlist(field_name, values)
+                else:
+                    data.pop(field_name, None)
+        elif isinstance(data, dict):
+            data = {
+                key: val
+                for key, val in data.items()
+                if val is not None and str(val).strip() != ""
+            }
+
+        super().__init__(data, *args, **kwargs)
 
     @classmethod
     def filter_search(cls, queryset: QuerySet, _name: str, value: str) -> QuerySet:

@@ -18,14 +18,14 @@ class ProductPagination(PageNumberPagination):
 
 
 class CategoryListView(generics.ListAPIView):
-    """List top-level product categories."""
+    """List every active category for hierarchical catalogue navigation."""
 
     serializer_class = CategorySerializer
     permission_classes = [permissions.AllowAny]
     pagination_class = None
 
     def get_queryset(self) -> QuerySet[Category]:
-        return Category.objects.filter(parent__isnull=True, is_active=True)
+        return Category.objects.filter(is_active=True).select_related("parent")
 
 
 class ProductListView(generics.ListAPIView):

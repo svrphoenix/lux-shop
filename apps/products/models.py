@@ -168,6 +168,12 @@ class Product(TimeStampedModel):
             models.Index(fields=["is_active", "-created_at"]),
             models.Index(fields=["category", "is_active"]),
         ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(stock__gte=0),
+                name="product_stock_gte_zero",
+            )
+        ]
 
     def save(self, *args, **kwargs) -> None:
         if not self.slug:

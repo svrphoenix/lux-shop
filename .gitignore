@@ -17,7 +17,7 @@ build/
 .env.local
 .env.*
 !.env.example
-!.env.test
+.env.test
 
 # =========================
 # Virtual Environments (uv)
@@ -62,3 +62,4 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+
