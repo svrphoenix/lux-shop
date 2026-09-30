@@ -28,6 +28,8 @@ class OrderListView(generics.ListAPIView):
 
 
 class OrderDetailView(generics.RetrieveAPIView):
+    """Retrieve detailed information about a specific order for the authenticated user."""
+
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated]
     lookup_field = "order_number"

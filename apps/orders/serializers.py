@@ -47,8 +47,8 @@ class CheckoutSerializer(serializers.Serializer):
     city = serializers.CharField(max_length=150)
     address = serializers.CharField()
 
-    @classmethod
-    def validate_full_name(cls, value: str) -> str:
+    # noinspection PyMethodMayBeStatic
+    def validate_full_name(self, value: str) -> str:
         name_parts = value.split(maxsplit=1)
         if len(name_parts) < 2:
             raise serializers.ValidationError("Enter both first name and last name.")

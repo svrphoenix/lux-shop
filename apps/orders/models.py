@@ -1,4 +1,3 @@
-# Create your models here.
 from decimal import Decimal
 
 from django.conf import settings
@@ -84,7 +83,7 @@ class Order(TimeStampedModel):
 
         with transaction.atomic():
             last_order: Order | None = (
-                Order.objects.select_for_update().order_by("-id").first()
+                cls.objects.select_for_update().order_by("-id").first()
             )
             if (
                 last_order

@@ -59,22 +59,22 @@ class ProductFilter(filters.FilterSet):
 
         super().__init__(data, *args, **kwargs)
 
-    @classmethod
-    def filter_search(cls, queryset: QuerySet, _name: str, value: str) -> QuerySet:
+    # noinspection PyMethodMayBeStatic
+    def filter_search(self, queryset: QuerySet, _name: str, value: str) -> QuerySet:
         return queryset.filter(
             Q(name__icontains=value) | Q(description__icontains=value)
         )
 
-    @classmethod
+    # noinspection PyMethodMayBeStatic
     def filter_category(
-        cls, queryset: QuerySet, _name: str, value: QuerySet[Category]
+        self, queryset: QuerySet, _name: str, value: QuerySet[Category]
     ) -> QuerySet:
         if not value:
             return queryset
         return queryset.filter(Q(category__in=value) | Q(category__parent__in=value))
 
-    @classmethod
-    def filter_in_stock(cls, queryset: QuerySet, _name: str, value: bool) -> QuerySet:
+    # noinspection PyMethodMayBeStatic
+    def filter_in_stock(self, queryset: QuerySet, _name: str, value: bool) -> QuerySet:
         if not value:
             return queryset
         return queryset.filter(stock__gt=0)
