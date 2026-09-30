@@ -41,6 +41,8 @@ class CartView(generics.GenericAPIView):
 
 
 class CartItemCreateView(generics.GenericAPIView):
+    """Add a new product or increase its quantity in the authenticated user's cart."""
+
     serializer_class = CartItemCreateSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -60,14 +62,16 @@ class CartItemCreateView(generics.GenericAPIView):
 
 
 class CartItemDetailView(generics.GenericAPIView):
+    """Update line item quantity or remove a specific item from the user's cart."""
+
     permission_classes = [permissions.IsAuthenticated]
 
-    def patch(self, request: Request, item_id: int) -> Response:
+    def patch(self, request: Request, pk: int) -> Response:
         serializer = CartItemUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = cast(User, request.user)
         try:
-            cart = update_item(user, item_id, serializer.validated_data["quantity"])
+            cart = update_item(user, pk, serializer.validated_data["quantity"])
         except CartItemNotFoundError as error:
             raise NotFound(str(error)) from error
         except ProductUnavailableError as error:
@@ -78,10 +82,10 @@ class CartItemDetailView(generics.GenericAPIView):
             CartSerializer(cart, context=self.get_serializer_context()).data
         )
 
-    def delete(self, request: Request, item_id: int) -> Response:
+    def delete(self, request: Request, pk: int) -> Response:
         user = cast(User, request.user)
         try:
-            cart = remove_item(user, item_id)
+            cart = remove_item(user, pk)
         except CartItemNotFoundError as error:
             raise NotFound(str(error)) from error
         return Response(
@@ -90,7 +94,7 @@ class CartItemDetailView(generics.GenericAPIView):
 
 
 class CartMergeView(generics.GenericAPIView):
-    """Merge a Next.js guest cart into the JWT-authenticated user's cart."""
+    """Merge an anonymous guest cart with the authenticated user's persistent cart."""
 
     serializer_class = CartMergeSerializer
     permission_classes = [permissions.IsAuthenticated]

@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 from rest_framework import serializers
 
 from apps.cart.models import Cart, CartItem
@@ -15,16 +13,14 @@ class CartProductSerializer(serializers.ModelSerializer):
 
 class CartItemSerializer(serializers.ModelSerializer):
     product = CartProductSerializer(read_only=True)
-    line_total = serializers.SerializerMethodField()
+    line_total = serializers.DecimalField(
+        max_digits=10, decimal_places=2, read_only=True
+    )
 
     class Meta:
         model = CartItem
         fields = ("id", "product", "quantity", "line_total")
         read_only_fields = fields
-
-    @classmethod
-    def get_line_total(cls, item: CartItem) -> Decimal:
-        return item.line_total
 
 
 class CartSerializer(serializers.ModelSerializer):

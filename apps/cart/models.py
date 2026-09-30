@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -76,3 +77,13 @@ class CartItem(TimeStampedModel):
     @property
     def line_total(self) -> Decimal:
         return self.product.price * self.quantity
+
+    def clean(self) -> None:
+        super().clean()
+        if self.product_id and self.quantity and self.quantity > self.product.stock:
+            raise ValidationError(
+                {
+                    "quantity": _("Quantity cannot exceed available stock (%(stock)d).")
+                    % {"stock": self.product.stock}
+                }
+            )

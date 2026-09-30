@@ -5,3 +5,18 @@ repos:
       - id: ruff-check
         args: [ --fix ]
       - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy (type-check)
+        entry: mypy
+        language: system
+        types_or: [python, pyi]
+
+      - id: pytest
+        name: pytest (test-suite)
+        entry: pytest
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

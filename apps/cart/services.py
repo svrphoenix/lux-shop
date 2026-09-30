@@ -44,28 +44,29 @@ def add_item(user: User, product_id: int, quantity: int) -> Cart:
     """Add a quantity to a cart line without exceeding the current stock."""
     product = _get_locked_active_product(product_id)
     cart = _get_locked_cart(user)
-    item, created = CartItem.objects.select_for_update().get_or_create(
-        cart=cart, product=product, defaults={"quantity": quantity}
-    )
-    if created:
-        _validate_stock(product, quantity)
-    else:
+
+    try:
+        item = CartItem.objects.select_for_update().get(cart=cart, product=product)
         requested_quantity = item.quantity + quantity
         _validate_stock(product, requested_quantity)
         item.quantity = requested_quantity
         item.save(update_fields=["quantity", "updated_at"])
+    except CartItem.DoesNotExist:
+        _validate_stock(product, quantity)
+        CartItem.objects.create(cart=cart, product=product, quantity=quantity)
+
     return get_cart_for_user(user)
 
 
 @transaction.atomic
-def update_item(user: User, item_id: int, quantity: int) -> Cart:
+def update_item(user: User, pk: int, quantity: int) -> Cart:
     """Set a cart line quantity; zero removes the line."""
     cart = _get_locked_cart(user)
     try:
         item: CartItem = (
             CartItem.objects.select_for_update()
             .select_related("product")
-            .get(pk=item_id, cart=cart)
+            .get(pk=pk, cart=cart)
         )
     except CartItem.DoesNotExist as error:
         raise CartItemNotFoundError("Cart item was not found.") from error
@@ -82,10 +83,10 @@ def update_item(user: User, item_id: int, quantity: int) -> Cart:
 
 
 @transaction.atomic
-def remove_item(user: User, item_id: int) -> Cart:
+def remove_item(user: User, pk: int) -> Cart:
     """Remove a cart line even when the product was deactivated."""
     cart = _get_locked_cart(user)
-    deleted, _ = CartItem.objects.filter(pk=item_id, cart=cart).delete()
+    deleted, _ = CartItem.objects.filter(pk=pk, cart=cart).delete()
     if not deleted:
         raise CartItemNotFoundError("Cart item was not found.")
     return get_cart_for_user(user)
@@ -122,13 +123,17 @@ def merge_guest_cart(user: User, guest_items: list[dict[str, int]]) -> Cart:
     Merge an anonymous guest cart with the authenticated user's persistent cart.
     `guest_items` is expected in the format: [{"product_id": 1, "quantity": 2}, ...]
     """
+    aggregated_items: dict[int, int] = {}
     for item in guest_items:
         product_id = item.get("product_id")
         quantity = item.get("quantity", 1)
 
-        if not product_id or quantity <= 0:
-            continue
+        if product_id and quantity > 0:
+            aggregated_items[product_id] = (
+                aggregated_items.get(product_id, 0) + quantity
+            )
 
+    for product_id, quantity in aggregated_items.items():
         try:
             add_item(user=user, product_id=product_id, quantity=quantity)
         except (ProductUnavailableError, InsufficientStockError):
