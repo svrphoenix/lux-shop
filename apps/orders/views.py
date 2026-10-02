@@ -22,6 +22,7 @@ class OrderListView(generics.ListAPIView):
         user = cast(User, self.request.user)
         return (
             Order.objects.filter(user=user)
+            .select_related("payment")
             .prefetch_related("items__product")
             .order_by("-created_at")
         )
@@ -36,7 +37,11 @@ class OrderDetailView(generics.RetrieveAPIView):
 
     def get_queryset(self) -> QuerySet[Order]:
         user = cast(User, self.request.user)
-        return Order.objects.filter(user=user).prefetch_related("items__product")
+        return (
+            Order.objects.filter(user=user)
+            .select_related("payment")
+            .prefetch_related("items__product")
+        )
 
 
 class CheckoutView(generics.GenericAPIView):

@@ -1,6 +1,8 @@
 from rest_framework import serializers
 
 from apps.orders.models import Order, OrderItem
+from apps.payments.models import PaymentMethod
+from apps.payments.serializers import PaymentSerializer
 from apps.products.models import Product
 
 
@@ -23,6 +25,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
+    payment = PaymentSerializer(read_only=True)
 
     class Meta:
         model = Order
@@ -35,6 +38,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "customer_phone",
             "shipping_address",
             "total_amount",
+            "payment",
             "items",
             "created_at",
         )
@@ -46,6 +50,10 @@ class CheckoutSerializer(serializers.Serializer):
     phone = serializers.CharField(max_length=32)
     city = serializers.CharField(max_length=150)
     address = serializers.CharField()
+    payment_method = serializers.ChoiceField(
+        choices=PaymentMethod.choices,
+        default=PaymentMethod.CASH_ON_DELIVERY,
+    )
 
     # noinspection PyMethodMayBeStatic
     def validate_full_name(self, value: str) -> str:

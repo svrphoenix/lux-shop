@@ -5,6 +5,8 @@ from django.db import transaction
 
 from apps.cart.models import Cart, CartItem
 from apps.orders.models import Order, OrderItem
+from apps.payments.models import PaymentMethod
+from apps.payments.services import create_payment_for_order
 from apps.products.models import Product
 
 if TYPE_CHECKING:
@@ -73,6 +75,10 @@ def create_order_from_cart(user: User, checkout_data: dict[str, Any]) -> Order:
     )
     Order.objects.filter(pk=order.pk).update(total_amount=total_amount)
     order.total_amount = total_amount
+    payment_method = PaymentMethod(
+        checkout_data.get("payment_method", PaymentMethod.CASH_ON_DELIVERY)
+    )
+    create_payment_for_order(order, payment_method)
 
     for item in cart_items:
         product = products[item.product.pk]
