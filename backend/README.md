@@ -58,6 +58,16 @@ container startup does not create or silently skip users.
 * **Dependency & Package Management:** `uv`
 * **Code Quality:** Ruff, Pre-commit
 
+## REST API documentation
+
+* OpenAPI schema: `GET /api/schema/`
+* Swagger UI: `GET /api/docs/`
+
+The schema describes the available API endpoints and request/response models.
+For protected endpoints, obtain an access token from `POST /api/v1/auth/login/`
+and authorize requests with `Authorization: Bearer <access-token>`. Public
+endpoints do not require a token.
+
 ## Nova Poshta delivery API
 
 Set `NOVA_POSHTA_API_KEY` in `.env.local` or `.env.dev`. The API URL defaults to

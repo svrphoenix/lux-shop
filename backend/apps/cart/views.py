@@ -1,5 +1,6 @@
 from typing import cast
 
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, permissions
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.request import Request
@@ -64,8 +65,14 @@ class CartItemCreateView(generics.GenericAPIView):
 class CartItemDetailView(generics.GenericAPIView):
     """Update line item quantity or remove a specific item from the user's cart."""
 
+    serializer_class = CartItemUpdateSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(
+        request=CartItemUpdateSerializer,
+        responses=CartSerializer,
+        description="Set the cart line quantity to a positive value.",
+    )
     def patch(self, request: Request, pk: int) -> Response:
         serializer = CartItemUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -82,6 +89,11 @@ class CartItemDetailView(generics.GenericAPIView):
             CartSerializer(cart, context=self.get_serializer_context()).data
         )
 
+    @extend_schema(
+        request=None,
+        responses=CartSerializer,
+        description="Remove a line from the cart and return the updated cart.",
+    )
     def delete(self, request: Request, pk: int) -> Response:
         user = cast(User, request.user)
         try:
