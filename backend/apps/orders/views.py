@@ -19,6 +19,8 @@ class OrderListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self) -> QuerySet[Order]:
+        if getattr(self, "swagger_fake_view", False):
+            return Order.objects.none()
         user = cast(User, self.request.user)
         return (
             Order.objects.filter(user=user)
@@ -36,6 +38,8 @@ class OrderDetailView(generics.RetrieveAPIView):
     lookup_field = "order_number"
 
     def get_queryset(self) -> QuerySet[Order]:
+        if getattr(self, "swagger_fake_view", False):
+            return Order.objects.none()
         user = cast(User, self.request.user)
         return (
             Order.objects.filter(user=user)

@@ -36,6 +36,8 @@ class ProductReviewListCreateView(generics.ListCreateAPIView):
         )
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Review.objects.none()
         return (
             Review.objects.filter(product=self.product)
             .select_related("user", "user__profile")

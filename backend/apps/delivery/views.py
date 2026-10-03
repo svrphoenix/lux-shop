@@ -2,11 +2,20 @@ from dataclasses import asdict
 
 from django.core.cache import cache
 from django.utils.translation import gettext_lazy as _
-from rest_framework import permissions, serializers, status
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
+from rest_framework import permissions, status
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.delivery.serializers import (
+    CitySearchResponseSerializer,
+    DeliveryErrorSerializer,
+    StreetQuerySerializer,
+    StreetSearchResponseSerializer,
+    WarehouseQuerySerializer,
+    WarehouseSearchResponseSerializer,
+)
 from apps.delivery.services import NovaPoshtaError, get_client
 
 CACHE_SECONDS = 60 * 60 * 24
@@ -15,20 +24,24 @@ SERVICE_UNAVAILABLE_RESPONSE = {
 }
 
 
-class WarehouseQuerySerializer(serializers.Serializer):
-    city = serializers.CharField(required=True)
-    q = serializers.CharField(required=False, default="", allow_blank=True)
-    type = serializers.ChoiceField(choices=["branch", "postomat"], default="branch")
-
-
-class StreetQuerySerializer(serializers.Serializer):
-    city = serializers.CharField(required=True)
-    q = serializers.CharField(required=True, min_length=2)
-
-
 class CitySearchView(APIView):
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="q",
+                type=str,
+                required=False,
+                description="City name; searches require at least two characters.",
+            )
+        ],
+        responses={
+            200: CitySearchResponseSerializer,
+            503: OpenApiResponse(response=DeliveryErrorSerializer),
+        },
+        description="Search settlements by name. An empty query returns no results.",
+    )
     # noinspection PyMethodMayBeStatic
     def get(self, request: Request) -> Response:
         query = request.query_params.get("q", "").strip()
@@ -59,6 +72,15 @@ class CitySearchView(APIView):
 class WarehouseSearchView(APIView):
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(
+        parameters=[WarehouseQuerySerializer],
+        responses={
+            200: WarehouseSearchResponseSerializer,
+            400: OpenApiResponse(description="Invalid city, query, or warehouse type."),
+            503: OpenApiResponse(response=DeliveryErrorSerializer),
+        },
+        description="Search branches or parcel lockers in a Nova Poshta city.",
+    )
     # noinspection PyMethodMayBeStatic
     def get(self, request: Request) -> Response:
         serializer = WarehouseQuerySerializer(data=request.query_params)
@@ -91,6 +113,17 @@ class StreetSearchView(APIView):
 
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(
+        parameters=[StreetQuerySerializer],
+        responses={
+            200: StreetSearchResponseSerializer,
+            400: OpenApiResponse(
+                description="City is missing or query is shorter than two characters."
+            ),
+            503: OpenApiResponse(response=DeliveryErrorSerializer),
+        },
+        description="Search streets for courier delivery in a Nova Poshta city.",
+    )
     # noinspection PyMethodMayBeStatic
     def get(self, request: Request) -> Response:
         serializer = StreetQuerySerializer(data=request.query_params)
