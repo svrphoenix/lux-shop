@@ -1,12 +1,10 @@
 services:
   db-test:
     image: postgres:17-alpine
-    environment:
-      POSTGRES_USER: ${TEST_POSTGRES_USER:-luxshop_test}
-      POSTGRES_PASSWORD: ${TEST_POSTGRES_PASSWORD:-luxshop_test_password}
-      POSTGRES_DB: ${TEST_POSTGRES_DB:-luxshop_test}
+    env_file:
+      - .env.test
     ports:
-      - "${TEST_POSTGRES_PORT:-5433}:5432"
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -17,10 +15,12 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
+    env_file:
+      - .env.test
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.test
-      TEST_SECRET_KEY: ${TEST_SECRET_KEY:-test-secret-key}
-      TEST_DATABASE_URL: postgresql://${TEST_POSTGRES_USER:-luxshop_test}:${TEST_POSTGRES_PASSWORD:-luxshop_test_password}@db-test:5432/${TEST_POSTGRES_DB:-luxshop_test}
+      DATABASE_URL: >-
+        postgresql://${POSTGRES_USER:?Set POSTGRES_USER in .env.test}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.test}@db-test:5432/${POSTGRES_DB:?Set POSTGRES_DB in .env.test}
     depends_on:
       db-test:
         condition: service_healthy

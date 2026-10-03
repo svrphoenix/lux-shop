@@ -1,11 +1,12 @@
+from pathlib import Path
+
+import environ
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+env_file = BASE_DIR / ".env.local"
+if env_file.exists():
+    environ.Env.read_env(env_file)
+
+# noinspection PyUnresolvedReferences,PyUnusedCode
 from .base import *
-
-environ.Env.read_env(BASE_DIR / ".env.local")
-
-# Variables from environment
-DEBUG = env("DEBUG")
-SECRET_KEY = env("SECRET_KEY")
-ALLOWED_HOSTS = env("ALLOWED_HOSTS")
-DATABASES = {"default": env.db("DATABASE_URL")}
-CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS")
-CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS")

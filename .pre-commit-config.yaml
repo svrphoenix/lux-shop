@@ -15,8 +15,8 @@ repos:
         types_or: [python, pyi]
 
       - id: pytest
-        name: pytest (test-suite)
-        entry: pytest
+        name: pytest (docker test-suite)
+        entry: docker compose --env-file .env.test -f docker-compose.test.yaml up --build --exit-code-from tests
         language: system
         pass_filenames: false
         stages: [pre-push]

@@ -6,21 +6,32 @@ from datetime import timedelta
 from pathlib import Path
 
 import environ
+from django.core.exceptions import ImproperlyConfigured
+
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Default environment initialization for project
 env = environ.Env(
-    DEBUG=(bool, True),
-    SECRET_KEY=(
-        str,
-        "django-insecure-#5^au%ku+9ufgl@w!&2zy7&f+cw+im^bq(g3c*1#ea39xm0@-",
-    ),
+    DEBUG=(bool, False),
     ALLOWED_HOSTS=(list, []),
     CORS_ALLOWED_ORIGINS=(list, []),
     CSRF_TRUSTED_ORIGINS=(list, []),
 )
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+DEBUG = env("DEBUG")
+SECRET_KEY = env("SECRET_KEY")
+if not SECRET_KEY.strip():
+    raise ImproperlyConfigured("SECRET_KEY must be set to a non-empty value.")
+ALLOWED_HOSTS = env("ALLOWED_HOSTS")
+CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS")
+CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS")
+
+# Database settings
+DATABASES = {"default": env.db("DATABASE_URL")}
+
+# Frontend & External Links
+FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:3000")
 
 # Application definition
 INSTALLED_APPS = [
@@ -40,7 +51,9 @@ INSTALLED_APPS = [
     "apps.products",
     "apps.cart",
     "apps.orders",
+    "apps.payments",
     "apps.reviews",
+    "apps.delivery",
 ]
 
 MIDDLEWARE = [
@@ -100,17 +113,11 @@ AUTH_USER_MODEL = "users.User"
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
     },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
 REST_FRAMEWORK = {
@@ -145,9 +152,14 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # Email
-# https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 MAILERS = {
     "default": {
         "BACKEND": "django.core.mail.backends.console.EmailBackend",
     },
 }
+
+# Third-party Services
+NOVA_POSHTA_API_URL = env(
+    "NOVA_POSHTA_API_URL", default="https://api.novaposhta.ua/v2.0/json/"
+)
+NOVA_POSHTA_API_KEY = env("NOVA_POSHTA_API_KEY", default="")
