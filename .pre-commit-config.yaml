@@ -4,19 +4,22 @@ repos:
     hooks:
       - id: ruff-check
         args: [ --fix ]
+        files: ^backend/
       - id: ruff-format
+        files: ^backend/
 
   - repo: local
     hooks:
       - id: mypy
         name: mypy (type-check)
-        entry: mypy
+        entry: bash -c 'cd backend && mypy .'
         language: system
         types_or: [python, pyi]
+        files: ^backend/
 
       - id: pytest
         name: pytest (docker test-suite)
-        entry: docker compose --env-file .env.test -f docker-compose.test.yaml up --build --exit-code-from tests
+        entry: bash -c 'cd backend && docker compose --env-file .env.test -f docker-compose.test.yaml up --build --exit-code-from tests'
         language: system
         pass_filenames: false
         stages: [pre-push]
