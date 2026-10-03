@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from django.db import IntegrityError, transaction
 from django.urls import reverse
+from django.utils.dateparse import parse_datetime
 from rest_framework.test import APIClient, APITestCase
 
 from apps.orders.models import Order, OrderItem
@@ -114,10 +115,14 @@ class ReviewsAPITests(APITestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json()["author"]["username"], self.buyer.username)
         self.assertEqual(response.json()["rating"], 5)
+        self.assertEqual(response.json()["comment"], "Explosive Citrus Aroma!")
+        self.assertIsNotNone(parse_datetime(response.json()["created_at"]))
+        self.assertIsNotNone(parse_datetime(response.json()["updated_at"]))
         self.assertFalse(can_review(self.buyer, self.product))
-        self.assertFalse(
-            self.client.get(self.product.get_absolute_url()).json()["can_review"]
-        )
+        updated_product = self.client.get(self.product.get_absolute_url()).json()
+        self.assertFalse(updated_product["can_review"])
+        self.assertEqual(updated_product["rating_avg"], 5.0)
+        self.assertEqual(updated_product["rating_count"], 1)
 
     def test_duplicate_and_non_buyer_reviews_are_rejected(self) -> None:
         self.client.force_authenticate(self.non_buyer)
@@ -174,7 +179,20 @@ class ReviewsAPITests(APITestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["count"], 1)
-        self.assertEqual(response.json()["results"][0]["author"]["avatar"], None)
+        review = response.json()["results"][0]
+        self.assertEqual(
+            set(review),
+            {"id", "rating", "comment", "author", "created_at", "updated_at"},
+        )
+        self.assertEqual(
+            set(review["author"]),
+            {"username", "avatar"},
+        )
+        self.assertEqual(review["author"]["username"], self.buyer.username)
+        self.assertIsNone(review["author"]["avatar"])
+        self.assertEqual(review["comment"], "A must-have for hop-forward beer.")
+        self.assertIsNotNone(parse_datetime(review["created_at"]))
+        self.assertIsNotNone(parse_datetime(review["updated_at"]))
 
         self.product.is_active = False
         self.product.save(update_fields=["is_active"])
@@ -186,3 +204,34 @@ class ReviewsAPITests(APITestCase):
             ).status_code,
             404,
         )
+
+    def test_public_reviews_are_paginated_with_frontend_review_shape(self) -> None:
+        for index in range(11):
+            reviewer = User.objects.create_user(
+                username=f"reviewer_{index}",
+                email=f"reviewer_{index}@example.com",
+            )
+            Review.objects.create(
+                user=reviewer,
+                product=self.product,
+                rating=index % 5 + 1,
+                comment=f"Review number {index}",
+            )
+
+        first_page = self.client.get(self.reviews_url)
+        second_page = self.client.get(self.reviews_url, {"page": 2})
+
+        self.assertEqual(first_page.status_code, 200)
+        self.assertEqual(first_page.json()["count"], 11)
+        self.assertEqual(len(first_page.json()["results"]), 10)
+        self.assertIsNotNone(first_page.json()["next"])
+        self.assertIsNone(first_page.json()["previous"])
+        self.assertEqual(second_page.status_code, 200)
+        self.assertEqual(len(second_page.json()["results"]), 1)
+        self.assertIsNotNone(second_page.json()["previous"])
+        review = first_page.json()["results"][0]
+        self.assertEqual(
+            set(review),
+            {"id", "rating", "comment", "author", "created_at", "updated_at"},
+        )
+        self.assertEqual(set(review["author"]), {"username", "avatar"})

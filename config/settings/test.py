@@ -12,7 +12,22 @@ from .base import *
 
 DEBUG = False
 
+DATABASES = {
+    "default": env.db(
+        "DATABASE_URL",
+        default="postgresql://postgres:postgres@127.0.0.1:5433/luxshop_test",
+    )
+}
+
 if "postgresql" not in DATABASES["default"]["ENGINE"]:
     raise ImproperlyConfigured("DATABASE_URL must point to a PostgreSQL database.")
 
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+
+NOVA_POSHTA_API_KEY = (
+    env("NOVA_POSHTA_API_KEY", default="test-mock-key") or "test-mock-key"
+)
+NOVA_POSHTA_API_URL = (
+    env("NOVA_POSHTA_API_URL", default="https://mock.novaposhta.local/v2.0/json/")
+    or "https://mock.novaposhta.local/v2.0/json/"
+)

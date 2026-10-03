@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django.test import TestCase
 from django.urls import reverse
+from django.utils.dateparse import parse_datetime
 
 from apps.orders.models import Order, OrderItem
 from apps.products.models import Category, Product
@@ -47,6 +48,75 @@ class ProductsAPITests(TestCase):
 
     def test_list_only_shows_active_products(self) -> None:
         self.assertCountEqual(self.product_names(), ["Citra", "Saaz", "US-05"])
+
+    def test_product_response_matches_frontend_catalogue_contract(self) -> None:
+        response = self.client.get(reverse("products:product-list"))
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        product = next(
+            item for item in payload["results"] if item["slug"] == self.citra.slug
+        )
+        self.assertEqual(
+            set(product),
+            {
+                "id",
+                "name",
+                "slug",
+                "description",
+                "price",
+                "category",
+                "image",
+                "stock",
+                "is_in_stock",
+                "rating_avg",
+                "rating_count",
+                "sold_qty",
+                "created_at",
+            },
+        )
+        self.assertEqual(
+            set(product["category"]),
+            {"id", "name", "slug", "description", "parent"},
+        )
+        self.assertEqual(product["price"], "6.00")
+        self.assertIsInstance(product["stock"], int)
+        self.assertIsInstance(product["is_in_stock"], bool)
+        self.assertIsInstance(product["rating_avg"], float)
+        self.assertIsInstance(product["rating_count"], int)
+        self.assertIsInstance(product["sold_qty"], int)
+        self.assertIsNotNone(parse_datetime(product["created_at"]))
+
+    def test_product_list_paginates_requested_page_size(self) -> None:
+        for index in range(10):
+            Product.objects.create(
+                name=f"Test ingredient {index}",
+                category=self.yeast,
+                price=Decimal(f"{7 + index}.00"),
+                stock=1,
+            )
+
+        first_page = self.client.get(
+            reverse("products:product-list"),
+            data={"ordering": "price", "page_size": "2"},
+        )
+        second_page = self.client.get(
+            reverse("products:product-list"),
+            data={"ordering": "price", "page_size": "2", "page": "2"},
+        )
+
+        self.assertEqual(first_page.status_code, 200)
+        self.assertEqual(first_page.json()["count"], 13)
+        self.assertEqual(len(first_page.json()["results"]), 2)
+        self.assertIsNotNone(first_page.json()["next"])
+        self.assertIsNone(first_page.json()["previous"])
+        self.assertEqual(second_page.status_code, 200)
+        self.assertEqual(len(second_page.json()["results"]), 2)
+        self.assertIsNotNone(second_page.json()["previous"])
+        self.assertNotEqual(
+            [item["id"] for item in first_page.json()["results"]],
+            [item["id"] for item in second_page.json()["results"]],
+        )
 
     def test_category_filter_includes_direct_children(self) -> None:
         self.assertCountEqual(
