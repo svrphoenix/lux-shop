@@ -23,6 +23,13 @@ if "postgresql" not in DATABASES["default"]["ENGINE"]:
     raise ImproperlyConfigured("DATABASE_URL must point to a PostgreSQL database.")
 
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+MAILERS = {
+    "default": {
+        "BACKEND": "django.core.mail.backends.locmem.EmailBackend",
+    }
+}
+DEFAULT_FROM_EMAIL = "orders@example.com"
+SHOP_ADMIN_EMAIL = "admin@example.com"
 
 NOVA_POSHTA_API_KEY = (
     env("NOVA_POSHTA_API_KEY", default="test-mock-key") or "test-mock-key"

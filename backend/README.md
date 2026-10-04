@@ -74,9 +74,9 @@ Set `NOVA_POSHTA_API_KEY` in `.env.local` or `.env.dev`. The API URL defaults to
 `https://api.novaposhta.ua/v2.0/json/` and can be overridden with
 `NOVA_POSHTA_API_URL`.
 
-* `GET /api/v1/delivery/cities/?q=<query>` searches cities (minimum two characters).
-* `GET /api/v1/delivery/warehouses/?city=<city-ref>&type=branch|postomat&q=<query>` searches branches or parcel lockers for a city. `type` defaults to `branch`; `q` is optional.
-* `GET /api/v1/delivery/streets/?city=<city-ref>&q=<query>` searches streets for courier delivery (minimum two characters).
+* `GET /api/v1/delivery/cities/?q=<query>` searches cities (minimum two characters). Each result has `ref` (settlement reference) and `delivery_city_ref` (reference used for warehouse searches).
+* `GET /api/v1/delivery/warehouses/?city=<delivery-city-ref>&type=branch|postomat&q=<query>` searches branches or parcel lockers for a city. Use the city's `delivery_city_ref`, not its `ref`; `type` defaults to `branch` and `q` is optional.
+* `GET /api/v1/delivery/streets/?city=<settlement-ref>&q=<query>` searches streets for courier delivery (minimum two characters). Use the city's `ref`.
 
 Successful responses contain a `results` array. If Nova Poshta is unavailable,
 the endpoints return `503 Service Unavailable`.
@@ -93,3 +93,23 @@ Include `payment_method` in `POST /api/v1/orders/checkout/`:
 The created order response includes a `payment` object with its method, status,
 amount, currency, and whether the card payment was simulated. This mock must be
 replaced by a real provider integration before accepting live card payments.
+
+## Order email notifications (local/development)
+
+Order confirmation and shop-admin notification use Resend's SMTP interface.
+Set these values in `.env.local` or `.env.dev`:
+
+* `RESEND_API_KEY` — API key from Resend.
+* `RESEND_FROM_EMAIL` — bare sender email address on a domain verified in Resend.
+  It is used for Django's `DEFAULT_FROM_EMAIL`, the shared sender for application
+  email. Password-reset email delivery is not implemented yet.
+* `SHOP_ADMIN_EMAIL` — address that receives new-order notifications.
+* `SITE_NAME` — optional sender display name; defaults to `LuxShop Store`.
+
+Resend SMTP uses `smtp.resend.com:587` with STARTTLS and the username `resend`.
+When `RESEND_API_KEY` is empty, Django prints emails to the backend console
+instead. No production email configuration is included.
+
+Both messages are scheduled after the checkout transaction commits. An email
+delivery failure is logged and does not undo a successfully created order.
+Tests use Django's in-memory email backend and do not send real emails.

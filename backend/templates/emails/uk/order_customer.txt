@@ -1,0 +1,22 @@
+{% autoescape off %}
+Вітаємо, {{ order.customer_first_name }}!
+
+Дякуємо за замовлення в {{ site_name }}.
+
+Замовлення №{{ order.order_number }} прийнято.
+Статус: {{ order.get_status_display }}
+
+Ваше замовлення:
+{% for item in order.items.all %}- {{ item.product.name }} × {{ item.quantity }} — {{ item.cost|floatformat:2 }} UAH
+{% endfor %}
+
+Разом: {{ order.total_amount|floatformat:2 }} UAH
+
+Адреса доставки: {{ order.shipping_address }}
+Телефон: {{ order.customer_phone }}
+
+Ми повідомимо вас про подальші зміни статусу замовлення.
+
+З повагою,
+{{ site_name }}
+{% endautoescape %}

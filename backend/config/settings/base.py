@@ -33,6 +33,8 @@ DATABASES = {"default": env.db("DATABASE_URL")}
 # Frontend & External Links
 FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:3000")
 
+SITE_NAME = env("SITE_NAME", default="LuxShop Store")
+
 # Application definition
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -91,12 +93,13 @@ WSGI_APPLICATION = "config.wsgi.application"
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 USE_I18N = True
-
 LANGUAGES = [
     ("uk", "Ukrainian"),
     ("en", "English"),
 ]
-
+# For directories (emails/en/) and frontend
+SUPPORTED_LANGUAGES = {code for code, _ in LANGUAGES}
+DEFAULT_LANGUAGE = (LANGUAGE_CODE or "en").split("-")[0].lower() or "en"
 USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
@@ -137,7 +140,7 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "LuxShop API",
+    "TITLE": "LuxShop Store API",
     "DESCRIPTION": (
         "REST API for the LuxShop store. Authenticate with a JWT access token "
         "using the Bearer authorization scheme."

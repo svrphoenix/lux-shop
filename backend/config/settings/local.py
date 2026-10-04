@@ -10,3 +10,9 @@ if env_file.exists():
 
 # noinspection PyUnresolvedReferences,PyUnusedCode
 from .base import *
+from .email import build_email_settings
+
+_email_settings = build_email_settings(env)
+MAILERS = _email_settings["MAILERS"]  # type: ignore[assignment]
+DEFAULT_FROM_EMAIL = _email_settings["DEFAULT_FROM_EMAIL"]
+SHOP_ADMIN_EMAIL = _email_settings["SHOP_ADMIN_EMAIL"]

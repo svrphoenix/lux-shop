@@ -2,6 +2,8 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from django.contrib.auth import get_user_model
+from django.core import mail
+from django.test import override_settings
 from django.urls import reverse
 from rest_framework.test import APITestCase
 
@@ -126,6 +128,29 @@ class CheckoutPaymentTests(APITestCase):
         self.assertEqual(response.status_code, 201)
         order: Order = Order.objects.get(order_number=response.json()["order_number"])
         self.assertEqual(order.payment.method, PaymentMethod.CASH_ON_DELIVERY)
+
+    @override_settings(
+        MAILERS={
+            "default": {
+                "BACKEND": "django.core.mail.backends.locmem.EmailBackend",
+            }
+        },
+        DEFAULT_FROM_EMAIL="orders@example.com",
+        SHOP_ADMIN_EMAIL="admin@example.com",
+    )
+    def test_checkout_sends_emails_after_order_commit(self) -> None:
+        self.create_cart()
+        if hasattr(mail, "outbox"):
+            mail.outbox.clear()
+
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.checkout()
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertEqual(mail.outbox[0].to, [self.user.email])
+        self.assertEqual(mail.outbox[1].to, ["admin@example.com"])
+        self.assertIn(response.json()["order_number"], mail.outbox[0].body)
 
     def test_unknown_payment_method_is_rejected_before_checkout(self) -> None:
         self.create_cart()

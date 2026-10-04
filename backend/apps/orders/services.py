@@ -5,6 +5,7 @@ from django.db import transaction
 
 from apps.cart.models import Cart, CartItem
 from apps.orders.models import Order, OrderItem
+from apps.orders.notifications import send_order_emails
 from apps.payments.models import PaymentMethod
 from apps.payments.services import create_payment_for_order
 from apps.products.models import Product
@@ -87,6 +88,11 @@ def create_order_from_cart(user: User, checkout_data: dict[str, Any]) -> Order:
     Product.objects.bulk_update(list(products.values()), ["stock"])
 
     CartItem.objects.filter(cart=cart).delete()
+
+    transaction.on_commit(
+        lambda: send_order_emails(order),
+        robust=True,
+    )
 
     return order
 
