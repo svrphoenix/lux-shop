@@ -65,6 +65,7 @@ export type DeliveryCity = {
   ref: string;
   name: string;
   area: string;
+  delivery_city_ref: string;
   label: string;
 };
 

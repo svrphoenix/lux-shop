@@ -74,7 +74,7 @@ export function CheckoutDeliveryFields() {
       setIsSearchingAddress(true);
       setSearchError(null);
       void searchDeliveryWarehouses(
-        city.ref,
+        city.delivery_city_ref,
         warehouseQuery.trim(),
         deliveryMethod,
         controller.signal,
