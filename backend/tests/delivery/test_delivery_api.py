@@ -14,6 +14,7 @@ DNIPRO_BRANCH_REF = "00000000-0000-4000-8000-000000000002"
 DNIPRO_POSTOMAT_REF = "00000000-0000-4000-8000-000000000003"
 CHORNOVOLA_STREET_REF = "00000000-0000-4000-8000-000000000004"
 CHORNOVOLA_AVENUE_REF = "00000000-0000-4000-8000-000000000005"
+DNIPRO_DELIVERY_CITY_REF = "00000000-0000-4000-8000-000000000006"
 
 
 def api_answer(
@@ -49,24 +50,53 @@ class NovaPoshtaClientTests(SimpleTestCase):
                     "Ref": DNIPRO_SETTLEMENT_REF,
                     "Description": "Дніпро",
                     "AreaDescription": "Дніпропетровська",
+                    "SettlementType": "city-type",
                 }
             ]
         )
-        with self.patch_requests(response) as post:
+        delivery_cities_response = api_answer(
+            [
+                {
+                    "Ref": DNIPRO_DELIVERY_CITY_REF,
+                    "Description": "Дніпро",
+                    "AreaDescription": "Дніпропетровська",
+                    "SettlementType": "city-type",
+                }
+            ]
+        )
+        with self.patch_requests(
+            side_effect=[response, delivery_cities_response, api_answer()]
+        ) as post:
             cities = self.client_instance.search_cities("Дні")
+            self.client_instance.search_warehouses(
+                cities[0].delivery_city_ref,
+                postomat=True,
+            )
 
-        payload = post.call_args.kwargs["json"]
-        self.assertEqual(payload["apiKey"], settings.NOVA_POSHTA_API_KEY)
+        settlement_payload = post.call_args_list[0].kwargs["json"]
+        delivery_city_payload = post.call_args_list[1].kwargs["json"]
+        self.assertEqual(settlement_payload["apiKey"], settings.NOVA_POSHTA_API_KEY)
+        self.assertEqual(post.call_args.kwargs["timeout"], 15)
         self.assertEqual(
-            (payload["modelName"], payload["calledMethod"]),
+            (settlement_payload["modelName"], settlement_payload["calledMethod"]),
             ("AddressGeneral", "getSettlements"),
         )
         self.assertEqual(
-            payload["methodProperties"],
+            settlement_payload["methodProperties"],
             {"FindByString": "Дні", "Warehouse": "1", "Limit": "10"},
+        )
+        self.assertEqual(
+            (delivery_city_payload["modelName"], delivery_city_payload["calledMethod"]),
+            ("Address", "getCities"),
+        )
+        warehouse_payload = post.call_args_list[2].kwargs["json"]
+        self.assertEqual(
+            warehouse_payload["methodProperties"]["CityRef"],
+            DNIPRO_DELIVERY_CITY_REF,
         )
         self.assertEqual(cities[0].ref, DNIPRO_SETTLEMENT_REF)
         self.assertEqual(cities[0].label, "Дніпро (Дніпропетровська обл.)")
+        self.assertEqual(cities[0].delivery_city_ref, DNIPRO_DELIVERY_CITY_REF)
 
     def test_warehouse_search_filters_by_requested_type(self) -> None:
         common = {
@@ -147,7 +177,7 @@ class NovaPoshtaClientTests(SimpleTestCase):
         response = api_answer(
             [], success=False, errors=["FindByString is not specified"]
         )
-        with self.patch_requests(response):
+        with self.patch_requests(side_effect=[response, response]):
             cities = self.client_instance.search_cities("Qqqzz")
         self.assertEqual(cities, [])
 
@@ -199,7 +229,12 @@ class DeliveryEndpointTests(SimpleTestCase):
         from apps.delivery.services import City
 
         self.nova_client.search_cities.return_value = [
-            City(DNIPRO_SETTLEMENT_REF, "Дніпро", "Дніпропетровська")
+            City(
+                DNIPRO_SETTLEMENT_REF,
+                "Дніпро",
+                "Дніпропетровська",
+                DNIPRO_DELIVERY_CITY_REF,
+            )
         ]
         response = self.client.get(reverse("delivery:cities"), {"q": "Дні"})
         self.assertEqual(response.status_code, 200)
@@ -211,6 +246,7 @@ class DeliveryEndpointTests(SimpleTestCase):
                         "ref": DNIPRO_SETTLEMENT_REF,
                         "name": "Дніпро",
                         "area": "Дніпропетровська",
+                        "delivery_city_ref": DNIPRO_DELIVERY_CITY_REF,
                         "label": "Дніпро (Дніпропетровська обл.)",
                     }
                 ]
@@ -332,3 +368,20 @@ class DeliveryEndpointTests(SimpleTestCase):
         response = self.client.get(reverse("delivery:cities"), {"q": "Київ"})
         self.assertEqual(response.status_code, 503)
         self.assertIn("detail", response.json())
+
+    def test_warehouse_provider_error_is_logged_without_api_key(self) -> None:
+        from apps.delivery.services import NovaPoshtaError
+
+        self.nova_client.search_warehouses.side_effect = NovaPoshtaError(
+            f"provider rejected key {settings.NOVA_POSHTA_API_KEY}"
+        )
+
+        with self.assertLogs("apps.delivery.views", level="WARNING") as logs:
+            response = self.client.get(
+                reverse("delivery:warehouses"),
+                {"city": DNIPRO_SETTLEMENT_REF, "type": "branch"},
+            )
+
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("[redacted]", logs.output[0])
+        self.assertNotIn(settings.NOVA_POSHTA_API_KEY, logs.output[0])

@@ -16,6 +16,7 @@ class CityResultSerializer(serializers.Serializer):
     ref = serializers.CharField()
     name = serializers.CharField()
     area = serializers.CharField()
+    delivery_city_ref = serializers.CharField(allow_blank=True)
     label = serializers.CharField()  # type: ignore[assignment]
 
 

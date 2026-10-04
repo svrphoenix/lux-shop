@@ -8,6 +8,7 @@ from django.conf import settings
 
 POSTOMAT_TYPE_REF = "f9316480-5f2d-425d-bc2c-ac7cd29decf0"
 NO_RESULTS_ERROR = "FindByString is not specified"
+NOVA_POSHTA_REQUEST_TIMEOUT = 15
 
 
 class NovaPoshtaError(Exception):
@@ -19,6 +20,7 @@ class City:
     ref: str
     name: str
     area: str
+    delivery_city_ref: str = ""
 
     @property
     def label(self) -> str:
@@ -49,7 +51,12 @@ class Street:
 
 
 class NovaPoshtaClient:
-    def __init__(self, api_key: str, api_url: str, timeout: float = 5) -> None:
+    def __init__(
+        self,
+        api_key: str,
+        api_url: str,
+        timeout: float = NOVA_POSHTA_REQUEST_TIMEOUT,
+    ) -> None:
         self.api_key = api_key
         self.api_url = api_url
         self.timeout = timeout
@@ -89,21 +96,43 @@ class NovaPoshtaClient:
         return data
 
     def search_cities(self, query: str, limit: int = 10) -> list[City]:
-        rows = self.call(
+        settlement_rows = self.call(
             "AddressGeneral",
             "getSettlements",
             FindByString=query,
             Warehouse="1",
             Limit=str(limit),
         )
+        delivery_city_rows = self.call(
+            "Address",
+            "getCities",
+            FindByString=query,
+            Limit=str(limit),
+        )
+        delivery_city_refs = {
+            (
+                row.get("Description", "").casefold(),
+                row.get("AreaDescription", "").casefold(),
+                row.get("SettlementType", ""),
+            ): row.get("Ref", "")
+            for row in delivery_city_rows
+        }
         try:
             return [
                 City(
                     ref=row["Ref"],
                     name=row["Description"],
                     area=row.get("AreaDescription", ""),
+                    delivery_city_ref=delivery_city_refs.get(
+                        (
+                            row["Description"].casefold(),
+                            row.get("AreaDescription", "").casefold(),
+                            row.get("SettlementType", ""),
+                        ),
+                        "",
+                    ),
                 )
-                for row in rows
+                for row in settlement_rows
             ]
         except (KeyError, TypeError) as error:
             raise NovaPoshtaError("Nova Poshta returned invalid city data.") from error

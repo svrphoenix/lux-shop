@@ -1,5 +1,7 @@
+import logging
 from dataclasses import asdict
 
+from django.conf import settings
 from django.core.cache import cache
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
@@ -18,10 +20,19 @@ from apps.delivery.serializers import (
 )
 from apps.delivery.services import NovaPoshtaError, get_client
 
+logger = logging.getLogger(__name__)
 CACHE_SECONDS = 60 * 60 * 24
 SERVICE_UNAVAILABLE_RESPONSE = {
     "detail": _("Delivery service is currently unavailable. Please try again later.")
 }
+
+
+def _log_provider_error(operation: str, error: NovaPoshtaError) -> None:
+    detail = str(error)
+    api_key = settings.NOVA_POSHTA_API_KEY
+    if api_key:
+        detail = detail.replace(api_key, "[redacted]")
+    logger.warning("Nova Poshta %s failed: %s", operation, detail)
 
 
 class CitySearchView(APIView):
@@ -50,11 +61,12 @@ class CitySearchView(APIView):
 
         try:
             cities = cache.get_or_set(
-                f"np:cities:v2:{query.lower()}",
+                f"np:cities:v3:{query.lower()}",
                 lambda: get_client().search_cities(query),
                 CACHE_SECONDS,
             )
-        except NovaPoshtaError:
+        except NovaPoshtaError as error:
+            _log_provider_error("city search", error)
             return Response(
                 SERVICE_UNAVAILABLE_RESPONSE,
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -99,7 +111,8 @@ class WarehouseSearchView(APIView):
                 ),
                 CACHE_SECONDS,
             )
-        except NovaPoshtaError:
+        except NovaPoshtaError as error:
+            _log_provider_error("warehouse search", error)
             return Response(
                 SERVICE_UNAVAILABLE_RESPONSE,
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -140,7 +153,8 @@ class StreetSearchView(APIView):
                 streets = get_client().search_streets(city_ref, query)
                 if streets:
                     cache.set(cache_key, streets, CACHE_SECONDS)
-        except NovaPoshtaError:
+        except NovaPoshtaError as error:
+            _log_provider_error("street search", error)
             return Response(
                 SERVICE_UNAVAILABLE_RESPONSE,
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
