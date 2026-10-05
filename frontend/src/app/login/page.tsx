@@ -17,6 +17,7 @@ function LoginForm() {
   const { login } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const passwordReset = searchParams.get("passwordReset") === "success";
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -43,12 +44,18 @@ function LoginForm() {
       <form className="auth-form" onSubmit={(event) => void submitLogin(event)}>
         <p className="eyebrow">Welcome back</p>
         <h1>Sign in</h1>
-        <label>Username<input autoComplete="username" name="username" required /></label>
+        {passwordReset ? (
+          <p className="info-panel success-panel" role="status">
+            Your password has been reset. Sign in with your new password.
+          </p>
+        ) : null}
+        <label>Username or email<input autoComplete="username" name="username" required /></label>
         <label>Password<input autoComplete="current-password" name="password" required type="password" /></label>
         {error ? <p className="info-panel error-panel">{error}</p> : null}
         <button className="button" disabled={isSubmitting} type="submit">
           {isSubmitting ? "Signing in…" : "Sign in"}
         </button>
+        <Link href="/forgot-password">Forgot your password?</Link>
         <p className="muted">New to Hop &amp; Barley? <Link href="/register">Create an account</Link>.</p>
       </form>
     </div>

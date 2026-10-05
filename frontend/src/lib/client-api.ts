@@ -203,6 +203,30 @@ export async function login(username: string, password: string): Promise<User> {
   return payload.user;
 }
 
+export function requestPasswordReset(email: string): Promise<{ detail: string }> {
+  return request<{ detail: string }>('auth/password-reset/', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function confirmPasswordReset(
+  uid: string,
+  token: string,
+  newPassword: string,
+  newPasswordConfirm: string
+): Promise<{ detail: string }> {
+  return request<{ detail: string }>('auth/password-reset/confirm/', {
+    method: 'POST',
+    body: JSON.stringify({
+      uid,
+      token,
+      new_password: newPassword,
+      new_password_confirm: newPasswordConfirm,
+    }),
+  });
+}
+
 export async function register(payload: {
   username: string;
   email: string;
