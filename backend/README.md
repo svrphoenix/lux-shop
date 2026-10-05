@@ -68,6 +68,23 @@ For protected endpoints, obtain an access token from `POST /api/v1/auth/login/`
 and authorize requests with `Authorization: Bearer <access-token>`. Public
 endpoints do not require a token.
 
+## Authentication and password recovery
+
+`POST /api/v1/auth/login/` accepts `username` as either the account username
+or its email address, together with `password`.
+
+* `POST /api/v1/auth/password-reset/` accepts `{"email": "..."}` and sends a
+  single-use reset link when the address belongs to an active account. The same
+  response is returned when no account matches.
+* `POST /api/v1/auth/password-reset/confirm/` accepts `uid`, `token`,
+  `new_password`, and `new_password_confirm` from that link.
+* The reset link opens the frontend `/reset-password/` page. Its host comes from
+  `FRONTEND_URL`; ensure this is set to the frontend URL for the current local or
+  development setup.
+
+Reset requests are limited to five per hour per client IP. Reset emails use the
+configured `DEFAULT_FROM_EMAIL` and the active email backend.
+
 ## Nova Poshta delivery API
 
 Set `NOVA_POSHTA_API_KEY` in `.env.local` or `.env.dev`. The API URL defaults to

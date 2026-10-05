@@ -48,13 +48,12 @@ class OrderNotificationTests(SimpleTestCase):
     ) -> None:
         with (
             patch(
-                "apps.orders.notifications.send_mail",
+                "apps.core.emails.send_mail",
                 side_effect=[smtplib.SMTPException("Resend unavailable"), 1],
             ) as send_mail,
-            self.assertLogs("apps.orders.notifications", level="ERROR"),
+            self.assertLogs("apps.core.emails", level="ERROR"),
         ):
             send_order_emails(self.order)  # type: ignore[arg-type]
-
         self.assertEqual(
             [entry.kwargs["recipient_list"] for entry in send_mail.call_args_list],
             [["customer@example.com"], ["admin@example.com"]],

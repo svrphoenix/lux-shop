@@ -1,85 +1,32 @@
-import logging
-import smtplib
-
 from django.conf import settings
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
 
+from apps.core.emails import send_templated_email
 from apps.orders.models import Order
 
-logger = logging.getLogger(__name__)
 
+def send_order_emails(order: Order, lang: str | None = None) -> None:
+    """Send order confirmation to customer and notification to store admin.
 
-def get_language(lang: str | None) -> str:
-    """Resolve valid language code or fallback to default."""
-    if lang:
-        clean_lang = lang.split("-")[0].lower()
-        if clean_lang in settings.SUPPORTED_LANGUAGES:
-            return clean_lang
-    return settings.DEFAULT_LANGUAGE
-
-
-def render_email(
-    template_prefix: str, lang: str | None, context: dict
-) -> tuple[str, str]:
-    """Render subject and body for a given template and language."""
-    language = get_language(lang)
-    email_context = {
-        "site_name": settings.SITE_NAME,
-        **context,
-    }
-    subject = render_to_string(
-        f"emails/{language}/{template_prefix}_subject.txt", email_context
-    ).strip()
-    body = render_to_string(f"emails/{language}/{template_prefix}.txt", email_context)
-    return subject, body
-
-
-def send_order_emails(order: Order) -> None:
-    """Send an order confirmation and a shop notification independently."""
+    Language resolution priority:
+    1. Explicitly passed `lang` argument (e.g., from request/headers).
+    2. `order.language` field if/when added to the model in the future.
+    3. Default language fallback via `core.emails.get_language()`.
+    """
+    resolved_lang = lang or getattr(order, "language", None)
     context = {"order": order}
 
-    cust_subject, cust_body = render_email(
-        "order_customer", getattr(order, "language", None), context
-    )
-    admin_subject, admin_body = render_email(
-        "order_admin", settings.DEFAULT_LANGUAGE, context
-    )
-
-    messages = (
-        (order.customer_email, cust_subject, cust_body, "customer"),
-        (settings.SHOP_ADMIN_EMAIL, admin_subject, admin_body, "admin"),
+    send_templated_email(
+        template_prefix="order_customer",
+        recipient=order.customer_email,
+        context=context,
+        lang=resolved_lang,
+        recipient_kind=f"customer_order_{order.order_number}",
     )
 
-    for recipient, subject, body, recipient_kind in messages:
-        if not recipient:
-            logger.error(
-                "Cannot send %s notification for order %s: recipient is not configured.",
-                recipient_kind,
-                order.order_number,
-            )
-            continue
-
-        try:
-            sent_count = send_mail(
-                subject=subject,
-                message=body,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[recipient],
-            )
-        except (OSError, smtplib.SMTPException):
-            logger.exception(
-                "Could not send %s notification for order %s to %s.",
-                recipient_kind,
-                order.order_number,
-                recipient,
-            )
-            continue
-
-        if sent_count != 1:
-            logger.error(
-                "Email backend did not send %s notification for order %s to %s.",
-                recipient_kind,
-                order.order_number,
-                recipient,
-            )
+    send_templated_email(
+        template_prefix="order_admin",
+        recipient=settings.SHOP_ADMIN_EMAIL,
+        context=context,
+        lang=settings.DEFAULT_LANGUAGE,
+        recipient_kind=f"admin_order_{order.order_number}",
+    )
