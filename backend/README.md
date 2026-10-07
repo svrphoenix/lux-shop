@@ -47,9 +47,24 @@ for tests run directly on the host.
 The current Docker image and Compose configuration are for development/testing,
 not production deployment. There is no production settings module yet.
 
-Create a development superuser explicitly with
-`docker compose exec backend uv run python manage.py createsuperuser`; the
-container startup does not create or silently skip users.
+The backend Compose file in this directory runs the API independently on its
+own. To run the integrated storefront, use the repository-root Compose file;
+it adds the frontend and Caddy without making the backend depend on either.
+
+To create a development superuser automatically when a backend container
+starts, set `DJANGO_SUPERUSER_USERNAME`, `DJANGO_SUPERUSER_EMAIL`, and
+`DJANGO_SUPERUSER_PASSWORD` in `backend/.env.dev`, based on
+`backend/.env.dev.example`. These variables are only for the Docker
+environment; do not add them to `.env.local`. Set all three or leave all three
+empty. Startup creates the account only if that username does not exist; it
+never resets an existing account's password. If the username belongs to a
+non-superuser, startup stops with an error instead of silently granting access.
+Keep the password secret.
+
+The standalone backend Compose stack serves Django admin directly at
+`http://localhost:${HOST_PORT:-8008}/admin/`. In the integrated root Compose
+stack, use `http://localhost:${DEV_PORT:-8080}/admin/`; Caddy routes admin
+requests to Django.
 
 ## 🛠️ Tech Stack
 

@@ -7,8 +7,14 @@ import type {
   Review,
 } from '@/lib/types';
 
-export const apiBaseUrl = (
+const publicApiBaseUrl = (
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1'
+).replace(/\/$/, '');
+
+export const apiBaseUrl = (
+  typeof window === 'undefined'
+    ? process.env.INTERNAL_API_URL ?? publicApiBaseUrl
+    : publicApiBaseUrl
 ).replace(/\/$/, '');
 
 export function getApiUrl(path: string): string {
@@ -20,9 +26,19 @@ export function getAssetUrl(path: string | null): string {
     return '/img/logo.svg';
   }
   if (path.startsWith('http://') || path.startsWith('https://')) {
+    const assetUrl = new URL(path);
+    if (assetUrl.hostname === 'backend') {
+      return `${assetUrl.pathname}${assetUrl.search}${assetUrl.hash}`;
+    }
     return path;
   }
-  return new URL(path, new URL(apiBaseUrl).origin).toString();
+  if (path.startsWith('/')) {
+    return path;
+  }
+  if (publicApiBaseUrl.startsWith('/')) {
+    return `/${path}`;
+  }
+  return new URL(path, new URL(publicApiBaseUrl).origin).toString();
 }
 
 async function getPublicJson<T>(path: string): Promise<T | null> {

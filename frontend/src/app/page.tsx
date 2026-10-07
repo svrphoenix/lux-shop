@@ -85,7 +85,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             )
           ) : (
             <p className="info-panel error-panel">
-              The catalogue is temporarily unavailable. Confirm that the Django API is running.
+              Unfortunately the catalogue is temporarily unavailable.
             </p>
           )}
         </div>
