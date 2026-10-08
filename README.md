@@ -34,6 +34,15 @@ Start the services:
 docker compose up --build
 ```
 
+Populate or refresh the 12 demo catalog products and their images:
+
+```sh
+docker compose exec backend uv run python manage.py seed_catalog
+```
+
+This command is safe to rerun. It creates or updates the demo categories and
+products and copies missing product images into the backend media volume.
+
 Open the storefront at [http://localhost:8080](http://localhost:8080). Caddy
 routes `/api/`, `/admin/`, `/media/`, and `/static/` requests to Django and
 routes all other paths to Next.js. Only Caddy is exposed to the host; the
@@ -69,6 +78,9 @@ cp backend/.env.dev.example backend/.env.dev
 cd backend
 docker compose up --build
 ```
+
+Seed the demo catalog in the standalone backend with
+`docker compose exec backend uv run python manage.py seed_catalog`.
 
 By default, the API and admin are available on port `8008`, for example
 [http://localhost:8008/admin/](http://localhost:8008/admin/).

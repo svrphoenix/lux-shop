@@ -66,6 +66,20 @@ The standalone backend Compose stack serves Django admin directly at
 stack, use `http://localhost:${DEV_PORT:-8080}/admin/`; Caddy routes admin
 requests to Django.
 
+## Demo catalog data
+
+The development catalog contains 12 products with images copied from the
+reference static storefront. From the repository root, run:
+
+```sh
+docker compose exec backend uv run python manage.py seed_catalog
+```
+
+When using this backend Compose file independently, run the same command from
+the `backend/` directory. The command creates or updates the demo categories
+and products and adds product images to `MEDIA_ROOT` when missing. It is
+idempotent; rerunning it does not duplicate records or image files.
+
 ## 🛠️ Tech Stack
 
 * **Framework:** Python 3.12+ / Django 6.1 / Django REST Framework
@@ -87,6 +101,11 @@ endpoints do not require a token.
 
 `POST /api/v1/auth/login/` accepts `username` as either the account username
 or its email address, together with `password`.
+
+Authenticated users can update their profile at `PATCH /api/v1/users/me/`.
+Manage the profile avatar separately at `PATCH /api/v1/users/me/avatar/` by
+uploading an image or selecting an avatar preset; `DELETE` removes the current
+avatar. Uploaded images are limited to 5 MB.
 
 * `POST /api/v1/auth/password-reset/` accepts `{"email": "..."}` and sends a
   single-use reset link when the address belongs to an active account. The same
