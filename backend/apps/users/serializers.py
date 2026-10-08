@@ -12,7 +12,7 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from apps.users.models import Profile
+from apps.users.models import AVATAR_PRESET_CHOICES, Profile
 
 if TYPE_CHECKING:
     from apps.users.models import User
@@ -30,13 +30,34 @@ class ProfileSerializer(serializers.ModelSerializer):
             "address",
             "birth_day",
             "avatar",
+            "avatar_preset",
         )
         extra_kwargs = {
             "phone_number": {"required": False, "allow_blank": True},
             "address": {"required": False, "allow_blank": True},
             "birth_day": {"required": False, "allow_null": True},
-            "avatar": {"required": False, "allow_null": True},
+            "avatar": {"read_only": True},
+            "avatar_preset": {"read_only": True},
         }
+
+
+class AvatarUpdateSerializer(serializers.Serializer):
+    avatar = serializers.ImageField(required=False)
+    avatar_preset = serializers.ChoiceField(
+        choices=AVATAR_PRESET_CHOICES,
+        required=False,
+    )
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        if len(attrs) != 1:
+            raise serializers.ValidationError(
+                "Provide either an image file or an avatar preset."
+            )
+        if "avatar" in attrs and attrs["avatar"].size > 5 * 1024 * 1024:
+            raise serializers.ValidationError(
+                {"avatar": "Avatar images must be 5 MB or smaller."}
+            )
+        return attrs
 
 
 class UserSerializer(serializers.ModelSerializer):

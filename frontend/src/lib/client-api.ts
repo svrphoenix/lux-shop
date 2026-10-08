@@ -363,6 +363,19 @@ export function updateUserProfile(data: FormData): Promise<User> {
   });
 }
 
+export function updateUserAvatar(data: FormData): Promise<User> {
+  return request<User>('users/me/avatar/', {
+    method: 'PATCH',
+    body: data,
+  });
+}
+
+export function removeUserAvatar(): Promise<User> {
+  return request<User>('users/me/avatar/', {
+    method: 'DELETE',
+  });
+}
+
 export function changePassword(data: {
   old_password: string;
   new_password: string;

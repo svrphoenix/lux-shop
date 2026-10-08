@@ -98,9 +98,13 @@ export function ReviewSection({ product, initialReviews }: ReviewSectionProps) {
               </p>
               {review.comment ? <p>{review.comment}</p> : null}
               <div className="review-author">
-                {review.author.avatar ? (
+                {review.author.avatar || review.author.avatar_preset ? (
                   <img
-                    src={getAssetUrl(review.author.avatar)}
+                    src={
+                      review.author.avatar
+                        ? getAssetUrl(review.author.avatar)
+                        : `/img/avatars/${review.author.avatar_preset}.svg`
+                    }
                     alt=""
                     width="32"
                     height="32"

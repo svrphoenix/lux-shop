@@ -1,9 +1,11 @@
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urlencode
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
+from django.core.files.uploadedfile import UploadedFile
+from django.db import DatabaseError
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from rest_framework import generics, permissions, status
@@ -12,12 +14,14 @@ from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from apps.core.emails import get_request_language
 from apps.users.notifications import send_password_reset_email
 from apps.users.serializers import (
+    AvatarUpdateSerializer,
     ChangePasswordSerializer,
     LoginSerializer,
     LogoutSerializer,
@@ -27,7 +31,10 @@ from apps.users.serializers import (
     UserSerializer,
 )
 
-User = get_user_model()
+if TYPE_CHECKING:
+    from apps.users.models import User
+else:
+    User = get_user_model()
 
 
 class UserProfileView(RetrieveUpdateAPIView):
@@ -42,6 +49,62 @@ class UserProfileView(RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class UserAvatarView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    # noinspection PyMethodMayBeStatic
+    def patch(self, request: Request) -> Response:
+        serializer = AvatarUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = cast("User", request.user)
+        profile = user.profile
+        previous_avatar_name = profile.avatar.name
+
+        avatar_file = serializer.validated_data.get("avatar")
+
+        if isinstance(avatar_file, UploadedFile):
+            # avatar_file.name or "avatar.png" гарантує тип 'str' для IDE
+            file_name = avatar_file.name or "avatar.png"
+            profile.avatar.save(file_name, avatar_file, save=False)
+            profile.avatar_preset = ""
+        else:
+            # setattr обходить хибне попередження PyCharm "Property 'name' cannot be set"
+            profile.avatar.name = ""
+            profile.avatar_preset = str(
+                serializer.validated_data.get("avatar_preset", "")
+            )
+
+        new_avatar_name = profile.avatar.name
+        try:
+            profile.save(update_fields=["avatar", "avatar_preset", "updated_at"])
+        except DatabaseError:
+            if new_avatar_name and new_avatar_name != previous_avatar_name:
+                profile.avatar.storage.delete(new_avatar_name)
+            raise
+
+        if previous_avatar_name and previous_avatar_name != new_avatar_name:
+            profile.avatar.storage.delete(previous_avatar_name)
+
+        return Response(UserSerializer(user).data)
+
+    # noinspection PyMethodMayBeStatic
+    def delete(self, request: Request) -> Response:
+        user = cast("User", request.user)
+        profile = user.profile
+        previous_avatar_name = profile.avatar.name
+
+        profile.avatar.name = ""
+        profile.avatar_preset = ""
+        profile.save(update_fields=["avatar", "avatar_preset", "updated_at"])
+
+        if previous_avatar_name:
+            profile.avatar.storage.delete(previous_avatar_name)
+
+        return Response(UserSerializer(user).data)
 
 
 class LoginView(TokenObtainPairView):

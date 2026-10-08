@@ -10,6 +10,7 @@ cart, delivery, and order data.
 - Product detail pages with reviews and add-to-cart actions.
 - Shopping cart and checkout with delivery and payment selection.
 - Account registration, sign-in, profile and password management.
+- Profile avatars with preset choices and custom image uploads.
 - Password recovery by email.
 - Responsive navigation and storefront pages.
 

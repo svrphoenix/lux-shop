@@ -41,6 +41,7 @@ export type User = {
     address: string;
     birth_day: string | null;
     avatar: string | null;
+    avatar_preset: string;
   };
 };
 
@@ -56,6 +57,7 @@ export type Review = {
   author: {
     username: string;
     avatar: string | null;
+    avatar_preset: string;
   };
   created_at: string;
   updated_at: string;

@@ -6,10 +6,14 @@ from apps.users.models import User
 
 class ReviewAuthorSerializer(serializers.ModelSerializer):
     avatar = serializers.ImageField(source="profile.avatar", read_only=True)
+    avatar_preset = serializers.CharField(
+        source="profile.avatar_preset",
+        read_only=True,
+    )
 
     class Meta:
         model = User
-        fields = ("username", "avatar")
+        fields = ("username", "avatar", "avatar_preset")
         read_only_fields = fields
 
 

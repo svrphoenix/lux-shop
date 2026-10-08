@@ -43,6 +43,7 @@ h1, h2, h3 { line-height: 1.15; }
 .header-auth-buttons .button { flex: 0 0 auto; padding: 10px 12px; white-space: nowrap; }
 .header-icon-link { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 38px; }
 .header-icon-link img { width: 24px; height: 24px; }
+.header-icon-link img.header-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
 .header-icon-link:hover { opacity: .75; }
 .menu-toggle { display: none; }
 .menu-toggle:focus-visible { outline: 3px solid var(--moss); outline-offset: 3px; }
@@ -80,6 +81,8 @@ input:focus, select:focus, textarea:focus { outline: 3px solid rgb(173 199 99 / 
 .section-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
 .section-heading h1, .section-heading h2 { margin-bottom: 0; }
 .catalogue-result-heading { margin-bottom: 16px; }
+.catalogue-pagination { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 28px; }
+.catalogue-pagination > span[aria-current="page"] { color: var(--muted); font-weight: 700; }
 .product-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; align-items: stretch; }
 .product-card { position: relative; display: flex; flex-direction: column; gap: 16px; height: 100%; padding: 16px; border: 1px solid #d9d9d9; border-radius: 8px; background: #f5f5f5; box-shadow: 0 2px 5px rgb(12 12 13 / 5%); transition: transform .2s ease, box-shadow .2s ease; }
 .product-card:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgb(12 12 13 / 10%); }
@@ -189,6 +192,20 @@ input:focus, select:focus, textarea:focus { outline: 3px solid rgb(173 199 99 / 
 .account-panel h1, .account-panel h2, .account-security-card h2 { margin-bottom: 8px; font-family: Georgia, serif; }
 .account-profile-form { display: grid; gap: 16px; margin-top: 20px; }
 .account-profile-form input:disabled { color: var(--muted); background: #f1f3ef; }
+.avatar-fields { display: grid; gap: 14px; min-width: 0; margin: 0; padding: 16px; border: 1px solid var(--line); border-radius: 8px; }
+.avatar-fields legend { padding: 0 6px; font-weight: 700; }
+.account-avatar-current { display: flex; align-items: center; gap: 16px; }
+.account-avatar-current > label { flex: 1; }
+.account-avatar-preview, .account-avatar-placeholder { display: grid; flex: 0 0 88px; width: 88px; height: 88px; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: #f0f5e7; object-fit: cover; }
+.account-avatar-placeholder { color: var(--moss); font-size: 2rem; font-weight: 700; }
+.account-avatar-current label > span { color: var(--muted); font-size: .8rem; font-weight: 400; }
+.avatar-options-label { margin: 0; color: var(--muted); font-size: .9rem; }
+.account-avatar-options { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.account-avatar-option { display: grid; justify-items: center; gap: 4px; padding: 8px 4px; border: 1px solid var(--line); border-radius: 7px; background: white; cursor: pointer; font-size: .72rem; }
+.account-avatar-option:has(input:checked) { border-color: var(--moss); background: #f0f5e7; }
+.account-avatar-option input { width: auto; margin: 0; accent-color: var(--moss); }
+.account-avatar-option img { width: 40px; height: 40px; border-radius: 50%; }
+.avatar-fields .account-profile-actions { gap: 10px; }
 .account-profile-name-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .account-profile-actions { display: flex; justify-content: flex-end; }
 .account-security-card { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 16px; }

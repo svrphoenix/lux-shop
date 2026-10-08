@@ -186,10 +186,11 @@ class ReviewsAPITests(APITestCase):
         )
         self.assertEqual(
             set(review["author"]),
-            {"username", "avatar"},
+            {"username", "avatar", "avatar_preset"},
         )
         self.assertEqual(review["author"]["username"], self.buyer.username)
         self.assertIsNone(review["author"]["avatar"])
+        self.assertEqual(review["author"]["avatar_preset"], "")
         self.assertEqual(review["comment"], "A must-have for hop-forward beer.")
         self.assertIsNotNone(parse_datetime(review["created_at"]))
         self.assertIsNotNone(parse_datetime(review["updated_at"]))
@@ -234,4 +235,7 @@ class ReviewsAPITests(APITestCase):
             set(review),
             {"id", "rating", "comment", "author", "created_at", "updated_at"},
         )
-        self.assertEqual(set(review["author"]), {"username", "avatar"})
+        self.assertEqual(
+            set(review["author"]),
+            {"username", "avatar", "avatar_preset"},
+        )

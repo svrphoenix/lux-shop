@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/components/auth-provider";
 import { useCart } from "@/components/cart-provider";
+import { getAssetUrl } from "@/lib/api";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -9,6 +10,13 @@ export function Header() {
   const { isReady, logout, user } = useAuth();
   const { cart } = useCart();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const avatarUrl = user
+    ? user.profile.avatar
+      ? getAssetUrl(user.profile.avatar)
+      : user.profile.avatar_preset
+        ? `/img/avatars/${user.profile.avatar_preset}.svg`
+        : null
+    : null;
 
   return (
     <header className="site-header">
@@ -31,7 +39,11 @@ export function Header() {
         {!isReady ? null : user ? (
           <div className="header-actions header-user-actions">
             <Link className="header-icon-link" href="/account" aria-label="My account">
-              <img src="/img/icons/User_alt.svg" alt="" />
+              <img
+                className={avatarUrl ? "header-avatar" : undefined}
+                src={avatarUrl ?? "/img/icons/User_alt.svg"}
+                alt=""
+              />
             </Link>
             <Link className="header-icon-link cart-icon-link" href="/cart" aria-label="Shopping cart">
               <img src="/img/icons/Shopping_bag.svg" alt="" />

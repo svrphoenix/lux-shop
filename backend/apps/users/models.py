@@ -2,6 +2,11 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+AVATAR_PRESET_CHOICES = tuple(
+    (f"avatar{index}", _("Avatar %(number)s") % {"number": index})
+    for index in range(1, 11)
+)
+
 
 class User(AbstractUser):
     """
@@ -31,6 +36,12 @@ class Profile(models.Model):
     address = models.TextField(_("address of delivery"), blank=True)
     birth_day = models.DateField(_("date of birth"), blank=True, null=True)
     avatar = models.ImageField(_("avatar"), upload_to="avatars/", blank=True, null=True)
+    avatar_preset = models.CharField(
+        _("avatar preset"),
+        max_length=16,
+        blank=True,
+        choices=AVATAR_PRESET_CHOICES,
+    )
     created_at = models.DateTimeField(_("created at"), auto_now_add=True)
     updated_at = models.DateTimeField(_("updated at"), auto_now=True)
 
