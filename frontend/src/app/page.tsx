@@ -1,10 +1,34 @@
 import { ProductCard } from "@/components/product-card";
 import { getCategories, getProducts } from "@/lib/api";
 import { flattenCategories } from "@/lib/category-tree";
+import Link from "next/link";
+
+const defaultProductPageSize = 6;
 
 type HomePageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
+
+function getPageHref(
+  searchParams: Record<string, string | string[] | undefined>,
+  page: number,
+): string {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (key === "page") {
+      continue;
+    }
+    if (typeof value === "string" && value.trim()) {
+      params.set(key, value);
+    } else if (Array.isArray(value)) {
+      value
+        .filter((item) => item.trim())
+        .forEach((item) => params.append(key, item));
+    }
+  }
+  params.set("page", String(page));
+  return `/?${params.toString()}`;
+}
 
 export default async function HomePage({ searchParams }: HomePageProps) {
   const params = await searchParams;
@@ -15,6 +39,17 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const activeCategory = typeof params.category === "string" ? params.category : "";
   const activeOrdering = typeof params.ordering === "string" ? params.ordering : "-created_at";
   const search = typeof params.search === "string" ? params.search : "";
+  const currentPage =
+    typeof params.page === "string" && Number.isInteger(Number(params.page))
+      ? Math.max(1, Number(params.page))
+      : 1;
+  const pageSize =
+    typeof params.page_size === "string" && Number(params.page_size) > 0
+      ? Math.min(100, Number(params.page_size))
+      : defaultProductPageSize;
+  const pageCount = productPage
+    ? Math.max(1, Math.ceil(productPage.count / pageSize))
+    : 1;
   const categoryOptions = flattenCategories(categories);
 
   return (
@@ -88,6 +123,35 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               Unfortunately the catalogue is temporarily unavailable.
             </p>
           )}
+          {productPage && pageCount > 1 ? (
+            <nav className="catalogue-pagination" aria-label="Product pages">
+              {productPage.previous ? (
+                <Link
+                  className="button button-secondary"
+                  href={getPageHref(params, currentPage - 1)}
+                  rel="prev"
+                >
+                  Previous
+                </Link>
+              ) : (
+                <span />
+              )}
+              <span aria-current="page">
+                Page {currentPage} of {pageCount}
+              </span>
+              {productPage.next ? (
+                <Link
+                  className="button button-secondary"
+                  href={getPageHref(params, currentPage + 1)}
+                  rel="next"
+                >
+                  Next
+                </Link>
+              ) : (
+                <span />
+              )}
+            </nav>
+          ) : null}
         </div>
       </section>
     </div>

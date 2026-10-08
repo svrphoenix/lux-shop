@@ -118,6 +118,35 @@ class ProductsAPITests(TestCase):
             [item["id"] for item in second_page.json()["results"]],
         )
 
+    def test_product_list_defaults_to_six_products_per_page(self) -> None:
+        for index in range(9):
+            Product.objects.create(
+                name=f"Additional ingredient {index}",
+                category=self.yeast,
+                price=Decimal(f"{10 + index}.00"),
+                stock=1,
+            )
+
+        first_page = self.client.get(reverse("products:product-list"))
+        second_page = self.client.get(
+            reverse("products:product-list"),
+            data={"page": "2"},
+        )
+
+        self.assertEqual(first_page.status_code, 200)
+        self.assertEqual(first_page.json()["count"], 12)
+        self.assertEqual(len(first_page.json()["results"]), 6)
+        self.assertIsNotNone(first_page.json()["next"])
+        self.assertIsNone(first_page.json()["previous"])
+        self.assertEqual(second_page.status_code, 200)
+        self.assertEqual(len(second_page.json()["results"]), 6)
+        self.assertIsNone(second_page.json()["next"])
+        self.assertIsNotNone(second_page.json()["previous"])
+        self.assertNotEqual(
+            [item["id"] for item in first_page.json()["results"]],
+            [item["id"] for item in second_page.json()["results"]],
+        )
+
     def test_category_filter_includes_direct_children(self) -> None:
         self.assertCountEqual(
             self.product_names(category=self.hops.slug), ["Citra", "Saaz"]
