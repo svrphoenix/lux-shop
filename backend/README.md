@@ -134,6 +134,17 @@ the endpoints return `503 Service Unavailable`.
 
 ## Checkout payments
 
+`GET /api/v1/orders/` returns the authenticated customer's order history. Add
+`?status=<status>` to filter by one of `pending`, `paid`, `shipped`, `delivered`,
+or `cancelled`. Invalid status values return `400 Bad Request`.
+
+Customers can cancel their own pending orders with
+`POST /api/v1/orders/<order_number>/cancel/`. Cancellation restores the reserved
+product quantities to stock in the same transaction as the status change.
+Non-pending orders cannot be cancelled through this endpoint; paid orders require
+a refund flow first. The Django Admin provides a bulk action for cancelling
+pending orders through the same stock-restoring operation.
+
 Include `payment_method` in `POST /api/v1/orders/checkout/`:
 
 * `"card"` creates a **simulated successful** payment and marks the order as paid.

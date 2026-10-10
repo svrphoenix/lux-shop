@@ -2,13 +2,19 @@ from typing import cast
 
 from django.db.models import QuerySet
 from rest_framework import generics, permissions, status
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.orders.models import Order
 from apps.orders.serializers import CheckoutSerializer, OrderSerializer
-from apps.orders.services import CheckoutError, create_order_from_cart
+from apps.orders.services import (
+    CheckoutError,
+    OrderCancellationError,
+    cancel_order,
+    create_order_from_cart,
+)
 from apps.users.models import User
 
 
@@ -22,12 +28,27 @@ class OrderListView(generics.ListAPIView):
         if getattr(self, "swagger_fake_view", False):
             return Order.objects.none()
         user = cast(User, self.request.user)
-        return (
+        queryset = (
             Order.objects.filter(user=user)
             .select_related("payment")
             .prefetch_related("items__product")
             .order_by("-created_at")
         )
+        order_status = self.request.query_params.get("status")
+        if order_status is None:
+            return queryset
+
+        valid_statuses = {value for value, _ in Order.OrderStatus.choices}
+        if order_status not in valid_statuses:
+            raise ValidationError(
+                {
+                    "status": (
+                        "Invalid status. Choose one of: "
+                        f"{', '.join(sorted(valid_statuses))}."
+                    )
+                }
+            )
+        return queryset.filter(status=order_status)
 
 
 class OrderDetailView(generics.RetrieveAPIView):
@@ -46,6 +67,26 @@ class OrderDetailView(generics.RetrieveAPIView):
             .select_related("payment")
             .prefetch_related("items__product")
         )
+
+
+class OrderCancelView(APIView):
+    """Cancel the authenticated customer's pending order."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    # noinspection PyMethodMayBeStatic
+    def post(self, request: Request, order_number: str) -> Response:
+        user = cast(User, request.user)
+        try:
+            order = cancel_order(order_number, user=user)
+        except Order.DoesNotExist as error:
+            raise NotFound("Order not found.") from error
+        except OrderCancellationError as error:
+            return Response(
+                {"detail": str(error)},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return Response(OrderSerializer(order).data)
 
 
 class CheckoutView(generics.GenericAPIView):

@@ -1,7 +1,57 @@
-from django.contrib import admin
+from django import forms
+from django.contrib import admin, messages
+from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from .models import Order, OrderItem
+from .services import OrderCancellationError, cancel_order
+
+
+class OrderAdminForm(forms.ModelForm):
+    class Meta:
+        model = Order
+        fields = [
+            "user",
+            "customer_email",
+            "customer_first_name",
+            "customer_last_name",
+            "customer_phone",
+            "status",
+            "total_amount",
+            "shipping_address",
+        ]
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        status_field = self.fields.get("status")
+
+        if isinstance(status_field, forms.ChoiceField):
+            if self.instance.pk and self.instance.status == Order.OrderStatus.CANCELLED:
+                status_field.disabled = True
+            else:
+                choices = [
+                    choice
+                    for choice in Order.OrderStatus.choices
+                    if choice[0] != Order.OrderStatus.CANCELLED
+                ]
+                status_field.choices = choices
+
+    def clean_status(self) -> str:
+        status = self.cleaned_data["status"]
+        if not self.instance.pk:
+            return status
+
+        status_order = [
+            Order.OrderStatus.PENDING,
+            Order.OrderStatus.PAID,
+            Order.OrderStatus.SHIPPED,
+            Order.OrderStatus.DELIVERED,
+            Order.OrderStatus.CANCELLED,
+        ]
+        current_status = self.instance.status
+        if status_order.index(status) < status_order.index(current_status):
+            raise ValidationError(_("Order status cannot move backwards."))
+        return status
 
 
 class OrderItemInline(admin.TabularInline):
@@ -10,6 +60,15 @@ class OrderItemInline(admin.TabularInline):
     autocomplete_fields = ["product"]
     fields = ["product", "price", "quantity", "get_cost"]
     readonly_fields = ["get_cost"]
+
+    def has_add_permission(self, request, obj=None) -> bool:
+        return obj is None
+
+    def has_change_permission(self, request, obj=None) -> bool:
+        return obj is None
+
+    def has_delete_permission(self, request, obj=None) -> bool:
+        return obj is None
 
     @admin.display(description=_("cost"))
     def get_cost(self, obj: OrderItem) -> str:
@@ -20,6 +79,8 @@ class OrderItemInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
+    form = OrderAdminForm
+    actions = ["cancel_pending_orders"]
     list_display = [
         "order_number",
         "get_full_name",
@@ -77,6 +138,33 @@ class OrderAdmin(admin.ModelAdmin):
         """Returns customer's full name and enables sorting by name."""
         name = f"{obj.customer_first_name} {obj.customer_last_name}".strip()
         return name if name else "-"
+
+    @admin.action(description=_("Cancel selected pending orders and restore stock"))
+    def cancel_pending_orders(self, request, queryset) -> None:
+        cancelled_count = 0
+        skipped_count = 0
+        for order_number in queryset.values_list("order_number", flat=True).iterator():
+            try:
+                cancel_order(order_number)
+            except OrderCancellationError:
+                skipped_count += 1
+            else:
+                cancelled_count += 1
+
+        if cancelled_count:
+            self.message_user(
+                request,
+                _("%(count)d order(s) cancelled and stock restored.")
+                % {"count": cancelled_count},
+                level=messages.SUCCESS,
+            )
+        if skipped_count:
+            self.message_user(
+                request,
+                _("%(count)d order(s) skipped because they are not pending.")
+                % {"count": skipped_count},
+                level=messages.WARNING,
+            )
 
     def get_readonly_fields(self, request, obj=None):
         readonly = ["order_number", "total_amount", "created_at", "updated_at"]

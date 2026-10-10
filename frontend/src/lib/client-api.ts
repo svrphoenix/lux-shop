@@ -342,8 +342,22 @@ export function createOrder(data: {
   });
 }
 
-export function getOrders(): Promise<Order[]> {
-  return request<Order[]>('orders/');
+export function getOrders(
+  status?: string,
+  signal?: AbortSignal
+): Promise<Order[]> {
+  const params = new URLSearchParams();
+  if (status) {
+    params.set('status', status);
+  }
+  const query = params.toString();
+  return request<Order[]>(`orders/${query ? `?${query}` : ''}`, { signal });
+}
+
+export function cancelOrder(orderNumber: string): Promise<Order> {
+  return request<Order>(`orders/${encodeURIComponent(orderNumber)}/cancel/`, {
+    method: 'POST',
+  });
 }
 
 export function updateUserProfile(data: FormData): Promise<User> {

@@ -22,6 +22,10 @@ class CheckoutError(Exception):
     """The cart cannot be converted into an order."""
 
 
+class OrderCancellationError(Exception):
+    """The order is not in a state that allows cancellation."""
+
+
 @transaction.atomic
 def create_order_from_cart(user: User, checkout_data: dict[str, Any]) -> Order:
     """Create a pending order, snapshot prices, reserve stock, and empty the cart."""
@@ -94,6 +98,48 @@ def create_order_from_cart(user: User, checkout_data: dict[str, Any]) -> Order:
         robust=True,
     )
 
+    return order
+
+
+@transaction.atomic
+def cancel_order(order_number: str, user: User | None = None) -> Order:
+    """Cancel a pending order and restore its reserved stock exactly once."""
+    orders = Order.objects.select_for_update().filter(order_number=order_number)
+    if user is not None:
+        orders = orders.filter(user=user)
+    order = orders.first()
+    if order is None:
+        raise Order.DoesNotExist
+    if order.status != Order.OrderStatus.PENDING:
+        raise OrderCancellationError(
+            "Only pending orders can be cancelled. Paid orders require a refund."
+        )
+
+    order_items = list(
+        OrderItem.objects.filter(order=order)
+        .order_by("product_id")
+        .values_list("product_id", "quantity")
+    )
+    product_ids = [product_id for product_id, _ in order_items]
+    products = list(
+        Product.objects.select_for_update().filter(pk__in=product_ids).order_by("pk")
+    )
+
+    products_by_id: dict[int, Product] = {product.pk: product for product in products}
+
+    for product_id, quantity in order_items:
+        product = products_by_id.get(product_id)
+        if product is None:
+            raise OrderCancellationError(
+                "An order product is unavailable; stock was not restored."
+            )
+        product.stock += quantity
+
+    if products:
+        Product.objects.bulk_update(products, ["stock"])
+
+    order.status = Order.OrderStatus.CANCELLED
+    order.save(update_fields=["status", "updated_at"])
     return order
 
 
