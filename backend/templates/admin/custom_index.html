@@ -1,0 +1,124 @@
+{% extends "admin/index.html" %}
+{% load i18n %}
+
+{% block content %}
+<style>
+:root {
+    --dash-border: var(--border-color, var(--hairline-color, #d0d7de));
+    --dash-bg: var(--body-bg, #ffffff);
+    --dash-text-muted: var(--secondary-fg, #586069);
+    --dash-text-main: var(--body-fg, #333333);
+  }
+  .dashboard-summary {
+    margin-bottom: 24px;
+  }
+  .dashboard-summary__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+  .dashboard-card {
+    padding: 18px 20px;
+    border: 1px solid var(--dash-border);
+    border-radius: 12px;
+    background: var(--dash-bg);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+  .dashboard-card__label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--dash-text-muted);
+    font-weight: 600;
+  }
+  .dashboard-card__value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-top: 8px;
+    color: var(--dash-text-main);
+  }
+  .dashboard-panel {
+    margin-top: 24px;
+    padding: 18px 20px;
+    border: 1px solid var(--dash-border);
+    border-radius: 12px;
+    background: var(--dash-bg);
+  }
+  .dashboard-panel__title {
+    margin: 0 0 16px;
+    font-size: 1.1rem;
+    color: var(--dash-text-main);
+  }
+  .dashboard-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .dashboard-table th {
+    text-align: left;
+    padding: 10px 8px;
+    border-bottom: 2px solid var(--dash-border);
+    color: var(--dash-text-muted);
+    font-size: 12px;
+  }
+  .dashboard-table td {
+    padding: 10px 8px;
+    border-bottom: 1px solid var(--dash-border);
+    color: var(--dash-text-main);
+  }
+</style>
+
+<div class="dashboard-summary">
+  <div class="dashboard-summary__grid">
+    <div class="dashboard-card">
+      <div class="dashboard-card__label">{% trans "Total orders" %}</div>
+      <div class="dashboard-card__value">{{ admin_dashboard.total_orders }}</div>
+    </div>
+    <div class="dashboard-card">
+      <div class="dashboard-card__label">{% trans "Completed sales" %}</div>
+      <div class="dashboard-card__value">{{ admin_dashboard.paid_orders }}</div>
+    </div>
+    <div class="dashboard-card">
+      <div class="dashboard-card__label">{% trans "Total income" %}</div>
+      <div class="dashboard-card__value">${{ admin_dashboard.revenue|floatformat:2 }}</div>
+    </div>
+    <div class="dashboard-card">
+      <div class="dashboard-card__label">{% trans "Total users" %}</div>
+      <div class="dashboard-card__value">{{ admin_dashboard.total_users }}</div>
+    </div>
+    <div class="dashboard-card">
+      <div class="dashboard-card__label">{% trans "Staff users" %}</div>
+      <div class="dashboard-card__value">{{ admin_dashboard.staff_users }}</div>
+    </div>
+    <div class="dashboard-card">
+      <div class="dashboard-card__label">{% trans "Active users" %}</div>
+      <div class="dashboard-card__value">{{ admin_dashboard.active_users }}</div>
+    </div>
+  </div>
+
+  {% if admin_dashboard.top_products %}
+  <div class="dashboard-panel">
+    <h2 class="dashboard-panel__title">{% trans "Top products" %}</h2>
+    <table class="dashboard-table">
+      <thead>
+        <tr>
+          <th>{% trans "Product" %}</th>
+          <th>{% trans "Qty sold" %}</th>
+          <th>{% trans "Revenue" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in admin_dashboard.top_products %}
+        <tr>
+          <td>{{ item.name }}</td>
+          <td>{{ item.sold_quantity }}</td>
+          <td>${{ item.revenue|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+
+{{ block.super }}
+{% endblock %}
