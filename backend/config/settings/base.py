@@ -26,6 +26,9 @@ if not SECRET_KEY.strip():
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS")
 CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS")
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
 
 # Database settings
 DATABASES = {"default": env.db("DATABASE_URL")}
@@ -43,6 +46,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "storages",
     "django_filters",
     "rest_framework",
     "drf_spectacular",
@@ -111,6 +115,35 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # Media files
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME", default="").strip()
+AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME", default="eu-central-1").strip()
+AWS_S3_CUSTOM_DOMAIN = env("AWS_S3_CUSTOM_DOMAIN", default="").strip()
+AWS_QUERYSTRING_AUTH = env.bool("AWS_QUERYSTRING_AUTH", default=True)
+
+if AWS_STORAGE_BUCKET_NAME:
+    media_storage_options = {
+        "bucket_name": AWS_STORAGE_BUCKET_NAME,
+        "region_name": AWS_S3_REGION_NAME,
+        "querystring_auth": AWS_QUERYSTRING_AUTH,
+        "file_overwrite": False,
+    }
+    if AWS_S3_CUSTOM_DOMAIN:
+        media_storage_options.update(
+            custom_domain=AWS_S3_CUSTOM_DOMAIN,
+            url_protocol="https:",
+            querystring_auth=False,
+        )
+
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": media_storage_options,
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
 
 # Custom User Model
 AUTH_USER_MODEL = "users.User"
