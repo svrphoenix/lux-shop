@@ -1,0 +1,22 @@
+{% autoescape off %}
+Hello, {{ order.customer_first_name }}!
+
+Thank you for your order at {{ site_name }}.
+
+Order #{{ order.order_number }} has been received.
+Status: {{ order.get_status_display }}
+
+Your Order:
+{% for item in order.items.all %}- {{ item.product.name }} × {{ item.quantity }} — {{ item.cost|floatformat:2 }} UAH
+{% endfor %}
+
+Total: {{ order.total_amount|floatformat:2 }} UAH
+
+Shipping address: {{ order.shipping_address }}
+Phone: {{ order.customer_phone }}
+
+We will notify you about further changes to your order status.
+
+Best regards,
+{{ site_name }}
+{% endautoescape %}

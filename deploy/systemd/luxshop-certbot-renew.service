@@ -1,0 +1,10 @@
+[Unit]
+Description=Renew LuxShop Let's Encrypt certificate
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker run --rm -v /srv/luxshop/certbot/conf:/etc/letsencrypt -v /srv/luxshop/certbot/www:/var/www/certbot certbot/certbot renew --webroot -w /var/www/certbot
+ExecStartPost=/usr/bin/docker compose --env-file /srv/luxshop/.env.production -f /srv/luxshop/docker-compose.production.yml exec -T nginx nginx -s reload

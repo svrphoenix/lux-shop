@@ -1,0 +1,15 @@
+{% autoescape off %}
+New order #{{ order.order_number }} at {{ site_name }}.
+
+Customer: {{ order.customer_first_name }} {{ order.customer_last_name }}
+Email: {{ order.customer_email }}
+Phone: {{ order.customer_phone }}
+Status: {{ order.get_status_display }}
+
+Order items:
+{% for item in order.items.all %}- {{ item.product.name }} × {{ item.quantity }} — {{ item.cost|floatformat:2 }} UAH
+{% endfor %}
+Total: {{ order.total_amount|floatformat:2 }} UAH
+
+Shipping address: {{ order.shipping_address }}
+{% endautoescape %}

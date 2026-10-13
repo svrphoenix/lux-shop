@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily renewal check for LuxShop Let's Encrypt certificate
+
+[Timer]
+OnCalendar=*-*-* 03:17:00
+RandomizedDelaySec=1h
+Persistent=true
+Unit=luxshop-certbot-renew.service
+
+[Install]
+WantedBy=timers.target

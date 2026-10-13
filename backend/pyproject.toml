@@ -1,0 +1,92 @@
+[project]
+name = "luxshop"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "django>=6.1.1",
+    "django-cors-headers>=4.9.0",
+    "django-environ>=0.14.0",
+    "django-filter>=26.1",
+    "django-storages[s3]>=1.14.6",
+    "djangorestframework==3.18.1",
+    "djangorestframework-simplejwt>=5.5.1",
+    "drf-spectacular>=0.30.0",
+    "gunicorn>=23.0.0",
+    "pillow>=12.3.0",
+    "psycopg[binary,pool]==3.3.6",
+    "python-slugify>=9.1.0",
+    "requests>=2.34.2",
+]
+
+[dependency-groups]
+dev = [
+    "django-stubs[compatible-mypy]>=6.1.1",
+    "djangorestframework-stubs[compatible-mypy]>=3.18.1",
+    "mypy>=2.3.1",
+    "pre-commit>=4.6.2",
+    "pytest>=9.1.0",
+    "pytest-django>=4.11.1",
+    "ruff==0.16.8",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+extend-exclude = ["**/migrations/**"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "C90",  # mccabe
+    "UP",   # pyupgrade
+    "RET",  # flake8-return
+    "SIM",  # flake8-simplify
+    "DJ",   # flake8-django
+    "RSE",  # flake8-raise
+    "S",    # flake8-bandit (security)
+    "RUF", # Ruff-specific rules
+]
+
+ignore = [
+    "E501",  # line too long
+    "S101",  # use of assert
+    "RUF012",  # Mutable class attributes
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.per-file-ignores]
+"**/settings/*.py" = ["F401", "E402", "F403", "F405"]
+"**/tests/*.py" = ["S101", "S105", "S106"]
+
+[tool.mypy]
+plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
+python_version = "3.12"
+exclude = ".*/migrations/.*"
+check_untyped_defs = true
+ignore_missing_imports = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = [
+    "environ.*",
+    "rest_framework_simplejwt.*",
+    "slugify.*",
+    "corsheaders.*",
+]
+ignore_missing_imports = true
+
+[tool.django-stubs]
+django_settings_module = "config.settings.local"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py", "tests.py"]
+addopts = "--strict-markers --tb=short"
