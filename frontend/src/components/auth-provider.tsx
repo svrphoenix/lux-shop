@@ -2,6 +2,7 @@
 
 import {
   clearSession,
+  getCurrentUser,
   getStoredUser,
   login as requestLogin,
   register as requestRegister,
@@ -14,6 +15,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import Link from "next/link";
@@ -41,6 +43,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [sessionNotice, setSessionNotice] = useState<string | null>(null);
+  const lastUserRefresh = useRef(0);
+  const userRefreshInProgress = useRef(false);
+
+  const refreshUser = useCallback(async (force = false) => {
+    if (!getStoredUser()) {
+      return;
+    }
+    if (
+      userRefreshInProgress.current ||
+      (!force && Date.now() - lastUserRefresh.current < 30 * 60 * 1000)
+    ) {
+      return;
+    }
+
+    userRefreshInProgress.current = true;
+    try {
+      const refreshedUser = await getCurrentUser();
+      saveUser(refreshedUser);
+      setUser(refreshedUser);
+      lastUserRefresh.current = Date.now();
+    } catch (error) {
+      console.error("Unable to refresh the current user profile.", error);
+    } finally {
+      userRefreshInProgress.current = false;
+    }
+  }, []);
 
   useEffect(() => {
     const syncUser = () => {
@@ -55,9 +83,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
     syncUser();
+    const initialRefresh = window.setTimeout(() => {
+      void refreshUser(true);
+    }, 0);
     window.addEventListener("hop-and-barley-auth-changed", handleAuthChanged);
-    return () => window.removeEventListener("hop-and-barley-auth-changed", handleAuthChanged);
-  }, []);
+    const refreshOnReturn = () => {
+      if (document.visibilityState === "visible") {
+        void refreshUser();
+      }
+    };
+    const refreshInterval = window.setInterval(() => {
+      void refreshUser();
+    }, 30 * 60 * 1000);
+    window.addEventListener("focus", refreshOnReturn);
+    document.addEventListener("visibilitychange", refreshOnReturn);
+    return () => {
+      window.removeEventListener("hop-and-barley-auth-changed", handleAuthChanged);
+      window.removeEventListener("focus", refreshOnReturn);
+      document.removeEventListener("visibilitychange", refreshOnReturn);
+      window.clearTimeout(initialRefresh);
+      window.clearInterval(refreshInterval);
+    };
+  }, [refreshUser]);
 
   const login = useCallback(async (credentials: Credentials) => {
     setUser(await requestLogin(credentials.username, credentials.password));
