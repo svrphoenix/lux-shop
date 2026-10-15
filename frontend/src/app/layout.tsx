@@ -7,6 +7,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Hop & Barley",
   description: "Ingredients for better beer.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
   icons: {
     icon: "/img/logo.svg",
   },

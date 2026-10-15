@@ -377,6 +377,10 @@ export function updateUserProfile(data: FormData): Promise<User> {
   });
 }
 
+export function getCurrentUser(): Promise<User> {
+  return request<User>('users/me/');
+}
+
 export function updateUserAvatar(data: FormData): Promise<User> {
   return request<User>('users/me/avatar/', {
     method: 'PATCH',
